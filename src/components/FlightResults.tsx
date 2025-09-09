@@ -66,6 +66,15 @@ interface FlightResultsProps {
     oneWayFee: number;
     roundTripFeeVietjet: number;
     roundTripFeeVNA: number;
+    vnaThreshold1: number;
+    vnaDiscount1: number; // Default 0 for PAGE
+    vnaThreshold2: number;
+    vnaDiscount2: number; // Default 0 for PAGE
+    vietjetThreshold1: number;
+    vietjetDiscount1: number; // Default 0 for PAGE
+    vietjetThreshold2: number;
+    vietjetDiscount2: number; // Default 0 for PAGE
+    
   } | null;
   apiStatus: { vj: string; vna: string };
   searchMessages?: string[];
@@ -123,20 +132,44 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const calculateFinalPrice = (originalPrice: string, flightResult?: any) => {
     const basePrice = parseInt(originalPrice);
     if (!searchData) return basePrice;
-    
+  
+    let finalPrice = basePrice;
+  
     if (searchData.tripType === 'OW') {
-      return basePrice + searchData.oneWayFee;
+      finalPrice += searchData.oneWayFee;
     } else {
-      // For round trip, determine airline and use appropriate fee
       if (flightResult) {
         const outbound = flightResult['chiều_đi'];
         const isVNA = outbound && outbound.hãng === 'VNA';
         const roundTripFee = isVNA ? searchData.roundTripFeeVNA : searchData.roundTripFeeVietjet;
-        return basePrice + roundTripFee;
+        finalPrice += roundTripFee;
+      } else {
+        finalPrice += searchData.roundTripFeeVietjet; // fallback
       }
-      // Fallback - use VietJet fee if we can't determine airline
-      return basePrice + searchData.roundTripFeeVietjet;
     }
+  
+    // Xác định hãng bay
+    let isVNA = false;
+    if (flightResult && flightResult['chiều_đi']) {
+      isVNA = flightResult['chiều_đi'].hãng === 'VNA';
+    }
+  
+    // Áp dụng discount nếu vượt threshold
+    if (isVNA) {
+      if (basePrice > searchData.vnaThreshold2) {
+        finalPrice -= searchData.vnaDiscount2;
+      } else if (basePrice > searchData.vnaThreshold1) {
+        finalPrice -= searchData.vnaDiscount1;
+      }
+    } else {
+      if (basePrice > searchData.vietjetThreshold2) {
+        finalPrice -= searchData.vietjetDiscount2;
+      } else if (basePrice > searchData.vietjetThreshold1) {
+        finalPrice -= searchData.vietjetDiscount1;
+      }
+    }
+  
+    return finalPrice;
   };
 
   const formatDate = (dateStr: string) => {

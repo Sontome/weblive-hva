@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, ChevronUp, ChevronDown, ChevronDown as ChevronDownIcon, RotateCcw, RotateCw } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronUp, ChevronDown, ChevronDown as ChevronDownIcon, RotateCcw, RotateCw, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,14 @@ interface FlightSearchData {
   oneWayFee: number;
   roundTripFeeVietjet: number;
   roundTripFeeVNA: number;
+  vnaThreshold1: number;
+  vnaDiscount1: number;
+  vnaThreshold2: number;
+  vnaDiscount2: number;
+  vietjetThreshold1: number;
+  vietjetDiscount1: number;
+  vietjetThreshold2: number;
+  vietjetDiscount2: number;
 }
 
 interface FlightSearchFormProps {
@@ -199,7 +207,15 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
     infants: 0,
     oneWayFee: 35000, // Default to "Khách PAGE"
     roundTripFeeVietjet: 20000, // Default for PAGE
-    roundTripFeeVNA: 15000 // Default for PAGE
+    roundTripFeeVNA: 15000, // Default for PAGE
+    vnaThreshold1: 0,
+    vnaDiscount1: 0, // Default 0 for PAGE
+    vnaThreshold2: 0,
+    vnaDiscount2: 0, // Default 0 for PAGE
+    vietjetThreshold1: 0,
+    vietjetDiscount1: 0, // Default 0 for PAGE
+    vietjetThreshold2: 0,
+    vietjetDiscount2: 0 // Default 0 for PAGE
   });
 
   // State for DatePicker
@@ -210,6 +226,7 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
 
   const [customerType, setCustomerType] = useState<'page' | 'live'>('page');
   const [isCustomMode, setIsCustomMode] = useState(false);
+  const [discountSectionOpen, setDiscountSectionOpen] = useState(false);
 
   // Refs for debounce / state sync / throttle
   const departureTimerRef = useRef<number | null>(null);
@@ -230,9 +247,35 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
       setCustomerType(propCustomerType);
       setIsCustomMode(false);
       if (propCustomerType === 'page') {
-        setFormData(prev => ({ ...prev, oneWayFee: 35000, roundTripFeeVietjet: 20000, roundTripFeeVNA: 15000 }));
+        setFormData(prev => ({ 
+          ...prev, 
+          oneWayFee: 35000, 
+          roundTripFeeVietjet: 20000, 
+          roundTripFeeVNA: 15000, 
+          vnaThreshold1: 0,
+          vnaDiscount1: 0,
+          vnaThreshold2: 0,
+          vnaDiscount2: 0,
+          vietjetThreshold1: 0,
+          vietjetDiscount1: 0,
+          vietjetThreshold2: 0,
+          vietjetDiscount2: 0
+        }));
       } else {
-        setFormData(prev => ({ ...prev, oneWayFee: 30000, roundTripFeeVietjet: 10000, roundTripFeeVNA: 10000 }));
+        setFormData(prev => ({ 
+          ...prev, 
+          oneWayFee: 30000, 
+          roundTripFeeVietjet: 10000, 
+          roundTripFeeVNA: 10000, 
+          vnaThreshold1: 500000,
+          vnaDiscount1: 3000,
+          vnaThreshold2: 700000,
+          vnaDiscount2: 5000,
+          vietjetThreshold1: 500000,
+          vietjetDiscount1: 3000,
+          vietjetThreshold2: 700000,
+          vietjetDiscount2: 5000
+        }));
       }
     }
   }, [propCustomerType]);
@@ -335,9 +378,35 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
     setCustomerType(type);
     setIsCustomMode(false); // Turn off custom mode when selecting preset customer type
     if (type === 'page') {
-      setFormData(prev => ({ ...prev, oneWayFee: 35000, roundTripFeeVietjet: 20000, roundTripFeeVNA: 15000 }));
+      setFormData(prev => ({ 
+        ...prev, 
+        oneWayFee: 35000, 
+        roundTripFeeVietjet: 20000, 
+        roundTripFeeVNA: 15000, 
+        vnaThreshold1: 300000,
+        vnaDiscount1: 0,
+        vnaThreshold2: 500000,
+        vnaDiscount2: 0,
+        vietjetThreshold1: 300000,
+        vietjetDiscount1: 0,
+        vietjetThreshold2: 500000,
+        vietjetDiscount2: 0
+      }));
     } else {
-      setFormData(prev => ({ ...prev, oneWayFee: 30000, roundTripFeeVietjet: 10000, roundTripFeeVNA: 10000 }));
+      setFormData(prev => ({ 
+        ...prev, 
+        oneWayFee: 30000, 
+        roundTripFeeVietjet: 10000, 
+        roundTripFeeVNA: 10000, 
+        vnaThreshold1: 300000,
+        vnaDiscount1: 5000,
+        vnaThreshold2: 500000,
+        vnaDiscount2: 7000,
+        vietjetThreshold1: 300000,
+        vietjetDiscount1: 5000,
+        vietjetThreshold2: 500000,
+        vietjetDiscount2: 7000
+      }));
     }
   };
 
@@ -564,6 +633,140 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Discount Configuration - Collapsible */}
+          <div className="mt-4 border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-700">Giảm giá theo mức vé</h4>
+              <button
+                type="button"
+                onClick={() => setDiscountSectionOpen(!discountSectionOpen)}
+                className="flex items-center space-x-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+              >
+                <Settings className="w-3 h-3" />
+                <span>{discountSectionOpen ? 'Ẩn' : 'Hiện'}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${discountSectionOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+            
+            {discountSectionOpen && (
+               <div className="grid grid-cols-1 gap-6 items-start">
+                {/* VNA Discounts */}
+                <div>
+                  <h5 className="w-full text-xs font-medium text-gray-600 mb-2">VNA</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-600">≥</span>
+                      <input
+                        type="number"
+                        value={formData.vnaThreshold1}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vnaThreshold1: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-600">₩ trừ</span>
+                      <input
+                        type="number"
+                        value={formData.vnaDiscount1}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vnaDiscount1: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${getFeeTextColor()}`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-500">₩</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-600">≥</span>
+                      <input
+                        type="number"
+                        value={formData.vnaThreshold2}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vnaThreshold2: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-600">₩ trừ</span>
+                      <input
+                        type="number"
+                        value={formData.vnaDiscount2}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vnaDiscount2: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${getFeeTextColor()}`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-500">₩</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* VIETJET Discounts */}
+                <div>
+                  <h5 className="w-full text-xs font-medium text-gray-600 mb-2">VIETJET</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-600">≥</span>
+                      <input
+                        type="number"
+                        value={formData.vietjetThreshold1}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vietjetThreshold1: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-600">₩ trừ</span>
+                      <input
+                        type="number"
+                        value={formData.vietjetDiscount1}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vietjetDiscount1: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${getFeeTextColor()}`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-500">₩</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-600">≥</span>
+                      <input
+                        type="number"
+                        value={formData.vietjetThreshold2}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vietjetThreshold2: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-600">₩ trừ</span>
+                      <input
+                        type="number"
+                        value={formData.vietjetDiscount2}
+                        onChange={(e) => isCustomMode && setFormData(prev => ({ ...prev, vietjetDiscount2: Math.max(0, parseInt(e.target.value) || 0) }))}
+                        className={`w-16 px-1 py-1 border border-gray-300 rounded text-xs ${
+                          !isCustomMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${getFeeTextColor()}`}
+                        min="0"
+                        disabled={!isCustomMode}
+                      />
+                      <span className="text-xs text-gray-500">₩</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
