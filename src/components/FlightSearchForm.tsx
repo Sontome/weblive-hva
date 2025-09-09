@@ -271,10 +271,10 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
           vnaDiscount1: 3000,
           vnaThreshold2: 700000,
           vnaDiscount2: 5000,
-          vietjetThreshold1: 500000,
-          vietjetDiscount1: 3000,
-          vietjetThreshold2: 700000,
-          vietjetDiscount2: 5000
+          vietjetThreshold1: 0,
+          vietjetDiscount1: 0,
+          vietjetThreshold2: 0,
+          vietjetDiscount2: 0
         }));
       }
     }
