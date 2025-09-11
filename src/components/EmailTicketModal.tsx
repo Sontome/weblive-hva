@@ -112,10 +112,10 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
       
       const result = await response.json();
       
-      // Nếu result.body là string JSON thì parse ra object, còn nếu đã là object thì giữ nguyên
-      const bodyData = typeof result.body === "string" ? JSON.parse(result.body) : result.body;
       
-      if (bodyData?.status == 'success') {
+      
+      
+      if (result?.status === 'success') {
         toast.success('Đã thêm hàng chờ gửi mail thành công', {
           duration: 5000,
           style: {
