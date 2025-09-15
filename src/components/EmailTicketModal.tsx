@@ -97,7 +97,8 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
             tenKhach: formData.tenKhach,
             xungHo: formData.xungHo,
             sdt: formData.sdt,
-            guiChung: formData.guiChung
+            guiChung: formData.guiChung,
+            banner : ""
           }
         ]
       };
