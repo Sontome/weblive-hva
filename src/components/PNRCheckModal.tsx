@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Copy, Download, FileText } from 'lucide-react';
 
+
 interface PNRCheckModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,32 +40,31 @@ export const PNRCheckModal = ({ isOpen, onClose }: PNRCheckModalProps) => {
       toast.error('Vui lòng nhập mã PNR');
       return;
     }
-
+  
     setIsLoading(true);
     setFiles([]);
-
+  
     try {
-      // First API call to get file list
+      // API mới trả PNG
       const listResponse = await fetch(`https://thuhongtour.com/list-pnr/${pnrCode.trim()}`);
       const listResult = await listResponse.json();
-
+  
       if (!listResult.files || !Array.isArray(listResult.files)) {
         toast.error('Không tìm thấy file cho mã PNR này');
         setIsLoading(false);
         return;
       }
-
-      toast.success(`Tìm thấy ${listResult.files.length} file PDF`);
-
-      // Fetch each PDF file
-      const pdfFiles: PNRFile[] = [];
+  
+      toast.success(`Tìm thấy ${listResult.files.length} file PNG`);
+  
+      const pngFiles: PNRFile[] = [];
       for (const fileUrl of listResult.files) {
         try {
           const fileResponse = await fetch(fileUrl);
           if (fileResponse.ok) {
-            const blob = await fileResponse.blob();
-            const fileName = fileUrl.split('/').pop() || 'document.pdf';
-            pdfFiles.push({
+            const blob = await fileResponse.blob(); // đây đã là PNG
+            const fileName = fileUrl.split('/').pop() || 'document.png';
+            pngFiles.push({
               url: fileUrl,
               name: fileName,
               blob: blob
@@ -74,10 +74,10 @@ export const PNRCheckModal = ({ isOpen, onClose }: PNRCheckModalProps) => {
           console.error('Error fetching file:', fileUrl, error);
         }
       }
-
-      setFiles(pdfFiles);
-      if (pdfFiles.length === 0) {
-        toast.error('Không thể tải xuống file PDF');
+  
+      setFiles(pngFiles);
+      if (pngFiles.length === 0) {
+        toast.error('Không thể tải xuống file PNG');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -87,9 +87,23 @@ export const PNRCheckModal = ({ isOpen, onClose }: PNRCheckModalProps) => {
     }
   };
 
-  const handleCopyUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast.success('Đã copy URL vào clipboard');
+  const handleCopyFile = async (file: PNRFile) => {
+    if (!file.blob) {
+      toast.error("Không có file để copy");
+      return;
+    }
+  
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "image/png": file.blob, // trực tiếp là PNG từ server
+        }),
+      ]);
+      toast.success("✅ Đã copy ảnh PNG vào clipboard");
+    } catch (err) {
+      console.error("Copy failed", err);
+      toast.error("❌ Trình duyệt không hỗ trợ copy PNG");
+    }
   };
 
   const handleDownload = (file: PNRFile) => {
@@ -155,10 +169,10 @@ export const PNRCheckModal = ({ isOpen, onClose }: PNRCheckModalProps) => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleCopyUrl(file.url)}
+                          onClick={() => handleCopyFile(file)}
                         >
                           <Copy className="h-4 w-4 mr-1" />
-                          Copy URL
+                          Copy Ảnh
                         </Button>
                         <Button
                           variant="default"
@@ -174,10 +188,10 @@ export const PNRCheckModal = ({ isOpen, onClose }: PNRCheckModalProps) => {
                     
                     {file.blob && (
                       <div className="mt-3">
-                        <iframe
+                        <img
                           src={URL.createObjectURL(file.blob)}
-                          className="w-full h-96 border rounded"
-                          title={`PDF Preview ${index + 1}`}
+                          className="w-full h-[800px] object-contain border rounded"
+                          alt={`Preview ${file.name}`}
                         />
                       </div>
                     )}
