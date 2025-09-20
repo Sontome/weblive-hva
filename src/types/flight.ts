@@ -33,4 +33,12 @@ export interface FlightSearchData {
   oneWayFee: number;
   roundTripFeeVietjet: number;
   roundTripFeeVNA: number;
+  vnaThreshold1: number;
+  vnaDiscount1: number;
+  vnaThreshold2: number;
+  vnaDiscount2: number;
+  vietjetThreshold1: number;
+  vietjetDiscount1: number;
+  vietjetThreshold2: number;
+  vietjetDiscount2: number;
 }
