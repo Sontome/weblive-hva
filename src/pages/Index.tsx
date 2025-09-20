@@ -290,7 +290,7 @@ const Index = () => {
                 onClick={() => setShowPNRModal(true)}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
               >
-                Kiểm tra PNR
+                Lấy ảnh mặt vé
               </button>
               <button
                 onClick={() => setShowEmailModal(true)}
