@@ -7,6 +7,16 @@ import { toast } from 'sonner';
 import { Upload, Loader2 } from 'lucide-react';
 
 interface ParsedData {
+  ho: string;
+  ten: string;
+  ngaysinh: string;
+  gioitinh: string;
+  cccd: string;
+  sohochieu: string;
+  ngayhethan: string;
+}
+
+interface OCRRawData {
   hoten: string;
   ngaysinh: string;
   gioitinh: string;
@@ -18,7 +28,7 @@ interface ParsedData {
 interface OCRResult {
   filename: string;
   result: {
-    parsed: ParsedData;
+    parsed: OCRRawData;
   };
 }
 
@@ -68,7 +78,18 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({ isOpen, onClose }) =
       
       if (result.data && Array.isArray(result.data)) {
         setOcrResults(result.data);
-        setEditableData(result.data.map((item: OCRResult) => ({ ...item.result.parsed })));
+        setEditableData(result.data.map((item: OCRResult) => {
+          const parsed = item.result.parsed;
+          const nameParts = parsed.hoten.trim().split(' ');
+          const ho = nameParts[0] || '';
+          const ten = nameParts.slice(1).join(' ') || '';
+          
+          return {
+            ...parsed,
+            ho,
+            ten
+          };
+        }));
         toast.success(`Đã xử lý ${result.count} ảnh thành công`);
       }
     } catch (error) {
@@ -163,11 +184,21 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({ isOpen, onClose }) =
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor={`hoten-${index}`}>Họ và tên</Label>
+                      <Label htmlFor={`ho-${index}`}>Họ</Label>
                       <Input
-                        id={`hoten-${index}`}
-                        value={data.hoten}
-                        onChange={(e) => handleFieldChange(index, 'hoten', e.target.value)}
+                        id={`ho-${index}`}
+                        value={data.ho}
+                        onChange={(e) => handleFieldChange(index, 'ho', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`ten-${index}`}>Tên</Label>
+                      <Input
+                        id={`ten-${index}`}
+                        value={data.ten}
+                        onChange={(e) => handleFieldChange(index, 'ten', e.target.value)}
                         className="mt-1"
                       />
                     </div>
@@ -189,16 +220,6 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({ isOpen, onClose }) =
                         id={`gioitinh-${index}`}
                         value={data.gioitinh}
                         onChange={(e) => handleFieldChange(index, 'gioitinh', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor={`cccd-${index}`}>CMND/CCCD</Label>
-                      <Input
-                        id={`cccd-${index}`}
-                        value={data.cccd}
-                        onChange={(e) => handleFieldChange(index, 'cccd', e.target.value)}
                         className="mt-1"
                       />
                     </div>
