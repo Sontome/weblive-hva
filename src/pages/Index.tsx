@@ -8,6 +8,7 @@ import { CustomerTypeModal } from '../components/CustomerTypeModal';
 import { LoginForm } from '../components/LoginForm';
 import { EmailTicketModal } from '../components/EmailTicketModal';
 import { PNRCheckModal } from '../components/PNRCheckModal';
+import { CheckinModal } from '../components/CheckinModal';
 import { searchAllFlights } from '../services/flightService';
 import { shouldSkipVietjet } from '../utils/flightValidation';
 import { toast } from 'sonner';
@@ -52,7 +53,8 @@ const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPNRModal, setShowPNRModal] = useState(false);
-
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
+  
   const playTingSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -273,6 +275,10 @@ const Index = () => {
         isOpen={showPNRModal}
         onClose={() => setShowPNRModal(false)}
       />
+      <CheckinModal
+        isOpen={showCheckinModal}
+        onClose={() => setShowCheckinModal(false)}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -286,6 +292,12 @@ const Index = () => {
               </p>
             </div>
             <div className="flex space-x-3">
+              <button
+                onClick={() => setShowCheckinModal(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors"
+              >
+                Check-in
+              </button>
               <button
                 onClick={() => setShowPNRModal(true)}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
