@@ -10,6 +10,7 @@ import { EmailTicketModal } from '../components/EmailTicketModal';
 import { PNRCheckModal } from '../components/PNRCheckModal';
 import { CheckinModal } from '../components/CheckinModal';
 import { RepriceModal } from '../components/RepriceModal';
+import { Button } from '@/components/ui/button';
 import { searchAllFlights } from '../services/flightService';
 import { shouldSkipVietjet } from '../utils/flightValidation';
 import { toast } from 'sonner';
@@ -56,7 +57,7 @@ const Index = () => {
   const [showPNRModal, setShowPNRModal] = useState(false);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showRepriceModal, setShowRepriceModal] = useState(false);
-  
+
   const playTingSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -297,37 +298,47 @@ const Index = () => {
                 Tìm kiếm và so sánh giá vé máy bay giữa Việt Nam và Hàn Quốc
               </p>
             </div>
-            <div className="flex space-x-3">
-              <button
+            <div className="flex gap-3">
+              <Button
                 onClick={() => setShowRepriceModal(true)}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                variant="action-reprice"
+                size="default"
+                className="px-5"
               >
-                Reprice
-              </button>
-              <button
+                💰 Reprice
+              </Button>
+              <Button
                 onClick={() => setShowCheckinModal(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                variant="action-checkin"
+                size="default"
+                className="px-5"
               >
-                Check-in
-              </button>
-              <button
+                ✅ Check-in
+              </Button>
+              <Button
                 onClick={() => setShowPNRModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                variant="action-image"
+                size="default"
+                className="px-5"
               >
-                Lấy ảnh mặt vé
-              </button>
-              <button
+                🎫 Lấy ảnh mặt vé
+              </Button>
+              <Button
                 onClick={() => setShowEmailModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                variant="action-email"
+                size="default"
+                className="px-5"
               >
-                Gửi Email Mặt Vé
-              </button>
-              <button
+                📧 Gửi Email Mặt Vé
+              </Button>
+              <Button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                variant="action-logout"
+                size="default"
+                className="px-5"
               >
-                THOÁT
-              </button>
+                🚪 THOÁT
+              </Button>
             </div>
           </div>
         </div>
