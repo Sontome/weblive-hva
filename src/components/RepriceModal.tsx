@@ -17,10 +17,27 @@ interface RepriceModalProps {
   onClose: () => void;
 }
 
+interface PassengerPrice {
+  name: string;
+  price: number;
+}
+
+interface PriceComparison {
+  oldTotal: number;
+  newTotal: number;
+  passengers: {
+    name: string;
+    oldPrice: number;
+    newPrice: number;
+  }[];
+}
+
 interface PNRResult {
   pnr: string;
   status: 'success' | 'failed' | 'pending';
   message?: string;
+  priceComparison?: PriceComparison;
+  showDetails?: boolean;
 }
 
 export const RepriceModal: React.FC<RepriceModalProps> = ({
@@ -45,6 +62,54 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
       .split(/[,;\s]+/)
       .map(pnr => pnr.trim().toUpperCase())
       .filter(pnr => pnr.length === 6);
+  };
+
+  const parsePriceText = (priceText: string): PassengerPrice[] => {
+    const lines = priceText.split('\n');
+    const passengers: PassengerPrice[] = [];
+    
+    for (const line of lines) {
+      // Match lines with passenger data: number, name (including INF), and price
+      const match = line.match(/^\s*\d+\s+\.?\d+\s*I?\s+([A-Z\/\s]+(?:MR|MS|MISS|MSTR|MRS)?(?:\(INF\))?)\s+KRW\s+(\d+)/);
+      if (match) {
+        passengers.push({
+          name: match[1].trim(),
+          price: parseInt(match[2])
+        });
+      }
+    }
+    
+    return passengers;
+  };
+
+  const comparePrices = (oldPriceText: string, newPriceText: string): PriceComparison => {
+    const oldPassengers = parsePriceText(oldPriceText);
+    const newPassengers = parsePriceText(newPriceText);
+    
+    const oldTotal = oldPassengers.reduce((sum, p) => sum + p.price, 0);
+    const newTotal = newPassengers.reduce((sum, p) => sum + p.price, 0);
+    
+    // Match passengers by name instead of index
+    const passengers = oldPassengers.map(oldP => {
+      const matchingNewPassenger = newPassengers.find(newP => newP.name === oldP.name);
+      return {
+        name: oldP.name,
+        oldPrice: oldP.price,
+        newPrice: matchingNewPassenger?.price || 0
+      };
+    });
+    
+    return { oldTotal, newTotal, passengers };
+  };
+
+  const toggleDetails = (index: number) => {
+    setResults(prev => 
+      prev.map((result, idx) => 
+        idx === index 
+          ? { ...result, showDetails: !result.showDetails }
+          : result
+      )
+    );
   };
 
   const handleReprice = async () => {
@@ -77,13 +142,21 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
         const responseText = JSON.stringify(data).toUpperCase();
         const isSuccess = responseText.includes('TRANSACTION COMPLETE');
         
+        let priceComparison: PriceComparison | undefined;
+        
+        if (isSuccess && data.pricegoc && data.pricemoi) {
+          priceComparison = comparePrices(data.pricegoc, data.pricemoi);
+        }
+        
         setResults(prev => 
           prev.map((result, idx) => 
             idx === i 
               ? { 
                   ...result, 
                   status: isSuccess ? 'success' : 'failed',
-                  message: isSuccess ? 'Thành công' : 'Thất bại'
+                  message: isSuccess ? 'Thành công' : 'Thất bại',
+                  priceComparison,
+                  showDetails: false
                 }
               : result
           )
@@ -175,39 +248,109 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
           {results.length > 0 && (
             <div className="mt-6">
               <h3 className="font-semibold mb-3">Kết quả:</h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {results.map((result, index) => (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-lg flex items-center justify-between ${
-                      result.status === 'success'
-                        ? 'bg-green-100 border border-green-300'
-                        : result.status === 'failed'
-                        ? 'bg-gray-100 border border-gray-300'
-                        : 'bg-yellow-100 border border-yellow-300'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <span
-                        className={`w-3 h-3 rounded-full ${
-                          result.status === 'success'
-                            ? 'bg-green-500'
-                            : result.status === 'failed'
-                            ? 'bg-gray-400'
-                            : 'bg-yellow-500'
-                        }`}
-                      />
-                      <span className="font-semibold">{result.pnr}</span>
-                    </div>
-                    <div className="text-sm">
-                      {result.status === 'pending' && (
-                        <span className="text-yellow-700">Đang xử lý...</span>
-                      )}
-                      {result.status === 'success' && (
-                        <span className="text-green-700">{result.message}</span>
-                      )}
-                      {result.status === 'failed' && (
-                        <span className="text-gray-700">{result.message}</span>
+                  <div key={index} className="space-y-2">
+                    <div
+                      className={`p-3 rounded-lg ${
+                        result.status === 'success'
+                          ? 'bg-green-50 border border-green-300'
+                          : result.status === 'failed'
+                          ? 'bg-gray-50 border border-gray-300'
+                          : 'bg-yellow-50 border border-yellow-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span
+                            className={`w-3 h-3 rounded-full ${
+                              result.status === 'success'
+                                ? 'bg-green-500'
+                                : result.status === 'failed'
+                                ? 'bg-gray-400'
+                                : 'bg-yellow-500'
+                            }`}
+                          />
+                          <span className="font-semibold">{result.pnr}</span>
+                        </div>
+                        <div className="text-sm">
+                          {result.status === 'pending' && (
+                            <span className="text-yellow-700">Đang xử lý...</span>
+                          )}
+                          {result.status === 'success' && (
+                            <span className="text-green-700">{result.message}</span>
+                          )}
+                          {result.status === 'failed' && (
+                            <span className="text-gray-700">{result.message}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {result.priceComparison && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="text-sm">
+                                <span className="text-gray-600">Giá cũ: </span>
+                                <span className="font-semibold">
+                                  {result.priceComparison.oldTotal.toLocaleString()} KRW
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-600">Giá mới: </span>
+                                <span className="font-semibold">
+                                  {result.priceComparison.newTotal.toLocaleString()} KRW
+                                </span>
+                              </div>
+                              <div
+                                className={`text-sm font-bold px-2 py-1 rounded ${
+                                  result.priceComparison.newTotal < result.priceComparison.oldTotal
+                                    ? 'bg-green-100 text-green-700'
+                                    : result.priceComparison.newTotal > result.priceComparison.oldTotal
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {result.priceComparison.newTotal < result.priceComparison.oldTotal
+                                  ? `↓ ${(result.priceComparison.oldTotal - result.priceComparison.newTotal).toLocaleString()} KRW`
+                                  : result.priceComparison.newTotal > result.priceComparison.oldTotal
+                                  ? `↑ ${(result.priceComparison.newTotal - result.priceComparison.oldTotal).toLocaleString()} KRW`
+                                  : '= Không đổi'}
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleDetails(index)}
+                            >
+                              {result.showDetails ? 'Ẩn chi tiết' : 'Chi tiết'}
+                            </Button>
+                          </div>
+
+                          {result.showDetails && (
+                            <div className="mt-3 space-y-2">
+                              <div className="text-xs font-semibold text-gray-700 grid grid-cols-3 gap-2 pb-2 border-b">
+                                <div>Tên khách</div>
+                                <div className="text-right">Giá cũ</div>
+                                <div className="text-right">Giá mới</div>
+                              </div>
+                              {result.priceComparison.passengers.map((passenger, pIndex) => (
+                                <div
+                                  key={pIndex}
+                                  className="text-xs grid grid-cols-3 gap-2 py-1 hover:bg-gray-50 rounded"
+                                >
+                                  <div className="font-medium">{passenger.name}</div>
+                                  <div className="text-right text-gray-600">
+                                    {passenger.oldPrice.toLocaleString()} KRW
+                                  </div>
+                                  <div className="text-right text-gray-600">
+                                    {passenger.newPrice.toLocaleString()} KRW
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
