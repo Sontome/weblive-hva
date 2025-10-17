@@ -70,7 +70,7 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
     
     for (const line of lines) {
       // Match lines with passenger data: number, name (including INF), and price
-      const match = line.match(/^\s*\d+\s+\.?\d+\s*I?\s+([A-Z\/\s]+(?:MR|MS|MISS|MSTR|MRS)?(?:\(INF\))?)\s+KRW\s+(\d+)/);
+      const match = line.match(/^\s*\d+\s+\.?\d+\s*I?\s+([\w\/\s\(\)\+\-]+?)\s+KRW\s+(\d+)/);
       if (match) {
         passengers.push({
           name: match[1].trim(),
