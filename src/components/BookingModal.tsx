@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PassengerInfo {
@@ -51,6 +51,9 @@ export const BookingModal = ({
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Popup dữ liệu khi giữ vé thành công
+  const [successData, setSuccessData] = useState<{ code: string, deadline: string } | null>(null);
+
   // Remove Vietnamese diacritics
   const removeVietnameseDiacritics = (str: string) => {
     const vietnameseMap: { [key: string]: string } = {
@@ -81,20 +84,15 @@ export const BookingModal = ({
       'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
       'Ỳ': 'Y', 'Ý': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y'
     };
-    
     return str.split('').map(char => vietnameseMap[char] || char).join('');
   };
 
   const formatName = (name: string, isLastName: boolean = false) => {
-    // Remove diacritics
     let formatted = removeVietnameseDiacritics(name.trim());
-    
     if (isLastName) {
-      // Last name: only one word, capitalize first letter
       formatted = formatted.split(' ')[0];
       return formatted.charAt(0).toUpperCase() + formatted.slice(1).toLowerCase();
     } else {
-      // First name: capitalize first letter of each word
       return formatted.split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
@@ -132,8 +130,7 @@ export const BookingModal = ({
   };
 
   const addPassenger = () => {
-    const totalPassengers = passengers.length;
-    if (totalPassengers >= maxSeats) {
+    if (passengers.length >= maxSeats) {
       toast({
         title: "Lỗi",
         description: `Số lượng khách không được vượt quá ${maxSeats} ghế còn lại`,
@@ -185,71 +182,41 @@ export const BookingModal = ({
   };
 
   const handleSubmit = async () => {
-    // Validate and format names before submission
-    const formattedPassengers = passengers.map(passenger => {
-      const formattedLastName = formatName(passenger.Họ, true);
-      const formattedFirstName = formatName(passenger.Tên, false);
-      
-      // Validate last name has only one word
-      if (formattedLastName.includes(' ')) {
-        throw new Error("Họ chỉ được phép có 1 từ (ví dụ: Tran)");
-      }
-      
-      if (!formattedLastName || !formattedFirstName || !passenger.Hộ_chiếu) {
-        throw new Error("Vui lòng điền đầy đủ thông tin hành khách");
-      }
-      
-      const result: PassengerWithType = {
-        ...passenger,
-        Họ: formattedLastName,
-        Tên: formattedFirstName
-      };
-      
-      if (passenger.infant) {
-        const formattedInfantLastName = formatName(passenger.infant.Họ, true);
-        const formattedInfantFirstName = formatName(passenger.infant.Tên, false);
-        
-        if (formattedInfantLastName.includes(' ')) {
-          throw new Error("Họ của trẻ sơ sinh chỉ được phép có 1 từ");
-        }
-        
-        if (!formattedInfantLastName || !formattedInfantFirstName || !passenger.infant.Hộ_chiếu) {
-          throw new Error("Vui lòng điền đầy đủ thông tin trẻ sơ sinh");
-        }
-        
-        result.infant = {
-          ...passenger.infant,
-          Họ: formattedInfantLastName,
-          Tên: formattedInfantFirstName
-        };
-      }
-      
-      return result;
-    });
-    
     try {
+      const formattedPassengers = passengers.map(passenger => {
+        const formattedLastName = formatName(passenger.Họ, true);
+        const formattedFirstName = formatName(passenger.Tên, false);
+        if (formattedLastName.includes(' ')) throw new Error("Họ chỉ được phép có 1 từ (ví dụ: Tran)");
+        if (!formattedLastName || !formattedFirstName || !passenger.Hộ_chiếu) throw new Error("Vui lòng điền đầy đủ thông tin hành khách");
 
-      // Build request data with formatted names
-      const ds_khach: {
+        const result: PassengerWithType = { ...passenger, Họ: formattedLastName, Tên: formattedFirstName };
+
+        if (passenger.infant) {
+          const formattedInfantLastName = formatName(passenger.infant.Họ, true);
+          const formattedInfantFirstName = formatName(passenger.infant.Tên, false);
+          if (formattedInfantLastName.includes(' ')) throw new Error("Họ của trẻ sơ sinh chỉ được phép có 1 từ");
+          if (!formattedInfantLastName || !formattedInfantFirstName || !passenger.infant.Hộ_chiếu)
+            throw new Error("Vui lòng điền đầy đủ thông tin trẻ sơ sinh");
+          result.infant = {
+            ...passenger.infant,
+            Họ: formattedInfantLastName,
+            Tên: formattedInfantFirstName
+          };
+        }
+        return result;
+      });
+
+      const ds_khach = { người_lớn: [], trẻ_em: [], em_bé: [] } as {
         người_lớn: PassengerInfo[];
         trẻ_em: PassengerInfo[];
         em_bé: PassengerInfo[];
-      } = {
-        người_lớn: [],
-        trẻ_em: [],
-        em_bé: []
       };
 
       formattedPassengers.forEach(passenger => {
-        const { type, infant, ...passengerInfo } = passenger;
-        if (type === 'người_lớn') {
-          ds_khach.người_lớn.push(passengerInfo);
-        } else {
-          ds_khach.trẻ_em.push(passengerInfo);
-        }
-        if (infant) {
-          ds_khach.em_bé.push(infant);
-        }
+        const { type, infant, ...info } = passenger;
+        if (type === 'người_lớn') ds_khach.người_lớn.push(info);
+        else ds_khach.trẻ_em.push(info);
+        if (infant) ds_khach.em_bé.push(infant);
       });
 
       const requestData = {
@@ -263,29 +230,16 @@ export const BookingModal = ({
       setIsLoading(true);
       const response = await fetch('https://thuhongtour.com/vj/booking', {
         method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
+        headers: { 'accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
-      
-      // Check if booking was successful
+
       if (data.mã_giữ_vé) {
-        toast({
-          title: "Giữ vé thành công!",
-          description: `Mã giữ vé: ${data.mã_giữ_vé}\nHạn thanh toán: ${data.hạn_thanh_toán}`,
-          duration: 10000
-        });
-        onClose();
+        setSuccessData({ code: data.mã_giữ_vé, deadline: data.hạn_thanh_toán });
       } else {
-        // Show error message
         toast({
           title: "Lỗi giữ vé",
           description: data.mess || "Không thể giữ vé. Vui lòng thử lại.",
@@ -306,184 +260,196 @@ export const BookingModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Thông Tin Hành Khách - Giữ Vé</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          {passengers.map((passenger, index) => (
-            <div key={index} className="border rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Hành khách {index + 1}</h3>
-                {passengers.length > 1 && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removePassenger(index)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Thông Tin Hành Khách - Giữ Vé</DialogTitle>
+          </DialogHeader>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Họ</Label>
-                  <Input
-                    value={passenger.Họ}
-                    onChange={(e) => handlePassengerChange(index, 'Họ', e.target.value)}
-                    placeholder="Nguyen"
-                  />
-                </div>
-                <div>
-                  <Label>Tên</Label>
-                  <Input
-                    value={passenger.Tên}
-                    onChange={(e) => handlePassengerChange(index, 'Tên', e.target.value)}
-                    placeholder="Van A"
-                  />
-                </div>
-                <div>
-                  <Label>Hộ chiếu</Label>
-                  <Input
-                    value={passenger.Hộ_chiếu}
-                    onChange={(e) => handlePassengerChange(index, 'Hộ_chiếu', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Giới tính</Label>
-                  <Select
-                    value={passenger.Giới_tính}
-                    onValueChange={(value: 'nam' | 'nữ') => handlePassengerChange(index, 'Giới_tính', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nam">Nam</SelectItem>
-                      <SelectItem value="nữ">Nữ</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Quốc tịch</Label>
-                  <Input
-                    value={passenger.Quốc_tịch}
-                    onChange={(e) => handlePassengerChange(index, 'Quốc_tịch', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Loại khách</Label>
-                  <Select
-                    value={passenger.type}
-                    onValueChange={(value: 'người_lớn' | 'trẻ_em') => handleTypeChange(index, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="người_lớn">Người lớn</SelectItem>
-                      <SelectItem value="trẻ_em">Trẻ em</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {passenger.type === 'người_lớn' && !passenger.infant && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addInfant(index)}
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm trẻ sơ sinh
-                </Button>
-              )}
-
-              {passenger.infant && (
-                <div className="ml-4 border-l-2 pl-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-sm">Trẻ sơ sinh kèm theo</h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeInfant(index)}
-                    >
+          {/* danh sách hành khách */}
+          <div className="space-y-6">
+            {passengers.map((passenger, index) => (
+              <div key={index} className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Hành khách {index + 1}</h3>
+                  {passengers.length > 1 && (
+                    <Button variant="destructive" size="sm" onClick={() => removePassenger(index)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Họ</Label>
+                    <Input
+                      value={passenger.Họ}
+                      onChange={(e) => handlePassengerChange(index, 'Họ', e.target.value)}
+                      placeholder="Nguyen"
+                    />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Họ</Label>
-                      <Input
-                        value={passenger.infant.Họ}
-                        onChange={(e) => handleInfantChange(index, 'Họ', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Tên</Label>
-                      <Input
-                        value={passenger.infant.Tên}
-                        onChange={(e) => handleInfantChange(index, 'Tên', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Hộ chiếu</Label>
-                      <Input
-                        value={passenger.infant.Hộ_chiếu}
-                        onChange={(e) => handleInfantChange(index, 'Hộ_chiếu', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Giới tính</Label>
-                      <Select
-                        value={passenger.infant.Giới_tính}
-                        onValueChange={(value: 'nam' | 'nữ') => handleInfantChange(index, 'Giới_tính', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="nam">Nam</SelectItem>
-                          <SelectItem value="nữ">Nữ</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Quốc tịch</Label>
-                      <Input
-                        value={passenger.infant.Quốc_tịch}
-                        onChange={(e) => handleInfantChange(index, 'Quốc_tịch', e.target.value)}
-                      />
-                    </div>
+                  <div>
+                    <Label>Tên</Label>
+                    <Input
+                      value={passenger.Tên}
+                      onChange={(e) => handlePassengerChange(index, 'Tên', e.target.value)}
+                      placeholder="Van A"
+                    />
+                  </div>
+                  <div>
+                    <Label>Hộ chiếu</Label>
+                    <Input
+                      value={passenger.Hộ_chiếu}
+                      onChange={(e) => handlePassengerChange(index, 'Hộ_chiếu', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Giới tính</Label>
+                    <Select
+                      value={passenger.Giới_tính}
+                      onValueChange={(v: 'nam' | 'nữ') => handlePassengerChange(index, 'Giới_tính', v)}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nam">Nam</SelectItem>
+                        <SelectItem value="nữ">Nữ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Quốc tịch</Label>
+                    <Input
+                      value={passenger.Quốc_tịch}
+                      onChange={(e) => handlePassengerChange(index, 'Quốc_tịch', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Loại khách</Label>
+                    <Select
+                      value={passenger.type}
+                      onValueChange={(v: 'người_lớn' | 'trẻ_em') => handleTypeChange(index, v)}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="người_lớn">Người lớn</SelectItem>
+                        <SelectItem value="trẻ_em">Trẻ em</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
 
-          <Button
-            variant="outline"
-            onClick={addPassenger}
-            className="w-full"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm hành khách
-          </Button>
+                {passenger.type === 'người_lớn' && !passenger.infant && (
+                  <Button variant="outline" size="sm" onClick={() => addInfant(index)} className="w-full">
+                    <Plus className="w-4 h-4 mr-2" /> Thêm trẻ sơ sinh
+                  </Button>
+                )}
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Hủy
+                {passenger.infant && (
+                  <div className="ml-4 border-l-2 pl-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">Trẻ sơ sinh kèm theo</h4>
+                      <Button variant="ghost" size="sm" onClick={() => removeInfant(index)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Họ</Label>
+                        <Input
+                          value={passenger.infant.Họ}
+                          onChange={(e) => handleInfantChange(index, 'Họ', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Tên</Label>
+                        <Input
+                          value={passenger.infant.Tên}
+                          onChange={(e) => handleInfantChange(index, 'Tên', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Hộ chiếu</Label>
+                        <Input
+                          value={passenger.infant.Hộ_chiếu}
+                          onChange={(e) => handleInfantChange(index, 'Hộ_chiếu', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Giới tính</Label>
+                        <Select
+                          value={passenger.infant.Giới_tính}
+                          onValueChange={(v: 'nam' | 'nữ') => handleInfantChange(index, 'Giới_tính', v)}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nam">Nam</SelectItem>
+                            <SelectItem value="nữ">Nữ</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Quốc tịch</Label>
+                        <Input
+                          value={passenger.infant.Quốc_tịch}
+                          onChange={(e) => handleInfantChange(index, 'Quốc_tịch', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <Button variant="outline" onClick={addPassenger} className="w-full">
+              <Plus className="w-4 h-4 mr-2" /> Thêm hành khách
             </Button>
-            <Button onClick={handleSubmit} disabled={isLoading}>
-              {isLoading ? 'Đang xử lý...' : 'Xác nhận'}
+
+            <Button className="w-full" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? 'Đang giữ vé...' : 'Giữ vé ngay'}
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Popup thông báo giữ vé thành công */}
+      <Dialog open={!!successData} onOpenChange={() => setSuccessData(null)}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle>🎉 Giữ vé thành công!</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-3">
+            <p className="text-sm text-gray-600">Mã giữ vé:</p>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xl font-bold text-green-600">{successData?.code}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(successData?.code || '');
+                  toast({ title: "Đã copy mã giữ vé ✈️" });
+                }}
+              >
+                <Copy className="w-4 h-4 mr-1" /> Copy
+              </Button>
+            </div>
+            <p className="text-sm text-gray-500">
+              Hạn thanh toán: <b>{successData?.deadline}</b>
+            </p>
+          </div>
+
+          <div className="flex justify-center mt-4">
+            <Button
+              onClick={() => {
+                setSuccessData(null);
+                onClose();
+              }}
+            >
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
