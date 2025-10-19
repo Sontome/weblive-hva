@@ -63,7 +63,7 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
     if (/GRAND TOTAL KRW/i.test(priceText)) {
       const totalMatch = priceText.match(/GRAND TOTAL KRW\s+(\d+)/i);
       const totalPrice = totalMatch ? parseInt(totalMatch[1]) : 0;
-      const paxMatches = [...priceText.matchAll(/\d+\.\s*([A-Z\/\s]+?\((?:ADT|INF)\))/gi)];
+      const paxMatches = [...priceText.matchAll(/^\s*\d*\.?\s*([A-Z\/\s]+?\([A-Z/0-9]+\))/gmi)];
       for (const match of paxMatches) {
         passengers.push({
           name: match[1].trim(),
