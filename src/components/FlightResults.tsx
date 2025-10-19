@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Plane, Clock, Users, Copy, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { BookingModal } from './BookingModal';
+import { Button } from './ui/button';
 
 interface FlightLeg {
   hãng: string;
@@ -97,6 +99,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 }) => {
   const [expandedDetails, setExpandedDetails] = useState<{ [key: number]: boolean }>({});
   const [expandedItinerary, setExpandedItinerary] = useState<{ [key: number]: boolean }>({});
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState<FlightResult | null>(null);
 
   const toggleDetails = (index: number) => {
     setExpandedDetails(prev => ({
@@ -355,6 +359,12 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     }
   };
 
+  const handleBooking = (result: FlightResult) => {
+    console.log('Selected flight for booking:', result);
+    setSelectedFlight(result);
+    setBookingModalOpen(true);
+  };
+
   const renderFlightCard = (result: FlightResult, index: number, flightNumber: number) => {
     const outbound = result['chiều đi'] || result['chiều_đi'];
     const inbound = result['chiều về'] || result['chiều_về'];
@@ -496,6 +506,18 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               <div className={`bg-gray-50 p-2 rounded font-sans font-medium whitespace-pre-line min-h-[60px] text-xl ${getCopyTextColor()}`}>
                 {copyTemplate}
               </div>
+            </div>
+          )}
+
+          {/* Booking Button - Only for VietJet flights */}
+          {!isVNA && (
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={() => handleBooking(result)}
+                className="flex items-center space-x-1 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs transition-colors"
+              >
+                <span className="text-xs font-medium">Giữ Vé</span>
+              </button>
             </div>
           )}
         </div>
@@ -761,6 +783,22 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Booking Modal for two-column view */}
+        {selectedFlight && (
+          <BookingModal
+            isOpen={bookingModalOpen}
+            onClose={() => {
+              setBookingModalOpen(false);
+              setSelectedFlight(null);
+            }}
+            bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
+            bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
+            tripType={searchData?.tripType || 'OW'}
+            departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
+            maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+          />
+        )}
       </div>
     );
   }
@@ -786,6 +824,22 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       <div className="space-y-3">
         {singleColumnResults.map((result, index) => renderFlightCard(result, index, index + 1))}
       </div>
+
+        {/* Booking Modal */}
+        {selectedFlight && (
+          <BookingModal
+            isOpen={bookingModalOpen}
+            onClose={() => {
+              setBookingModalOpen(false);
+              setSelectedFlight(null);
+            }}
+            bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
+            bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
+            tripType={searchData?.tripType || 'OW'}
+            departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
+            maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+          />
+        )}
     </div>
   );
 };
