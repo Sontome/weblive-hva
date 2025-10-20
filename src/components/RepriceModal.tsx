@@ -22,6 +22,18 @@ interface PassengerPrice {
   price: number;
 }
 
+interface PNRResult {
+  pnr: string;
+  status: 'success' | 'error';
+  originalPrice?: PassengerPrice[];
+  customerType?: string;
+  error?: string;
+}
+
+interface PNRRepriceResult extends PNRResult {
+  priceComparison?: PriceComparison;
+}
+
 interface PriceComparison {
   oldTotal: number;
   newTotal: number;
@@ -39,21 +51,30 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
   onClose,
 }) => {
   const [pnrInput, setPnrInput] = useState('');
-  const [customerType, setCustomerType] = useState('VFR');
+  const [customerTypes, setCustomerTypes] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<ModalStep>('check');
-  const [originalPrice, setOriginalPrice] = useState<PassengerPrice[]>([]);
-  const [priceComparison, setPriceComparison] = useState<PriceComparison | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [pnrResults, setPnrResults] = useState<PNRResult[]>([]);
+  const [repriceResults, setRepriceResults] = useState<PNRRepriceResult[]>([]);
+  const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
 
   const handleClose = () => {
     setPnrInput('');
-    setCustomerType('VFR');
+    setCustomerTypes({});
     setStep('check');
-    setOriginalPrice([]);
-    setPriceComparison(null);
-    setShowDetails(false);
+    setPnrResults([]);
+    setRepriceResults([]);
+    setShowDetails({});
     onClose();
+  };
+
+  const parsePNRInput = (input: string): string[] => {
+    // Split by space, comma, or semicolon and filter valid 6-character PNRs
+    const pnrs = input
+      .split(/[\s,;]+/)
+      .map(pnr => pnr.trim().toUpperCase())
+      .filter(pnr => pnr.length === 6);
+    return [...new Set(pnrs)]; // Remove duplicates
   };
 
   const parsePriceText = (priceText: string): PassengerPrice[] => {
@@ -63,7 +84,8 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
     if (/GRAND TOTAL KRW/i.test(priceText)) {
       const totalMatch = priceText.match(/GRAND TOTAL KRW\s+(\d+)/i);
       const totalPrice = totalMatch ? parseInt(totalMatch[1]) : 0;
-      const paxMatches = [...priceText.matchAll(/^\s*\d*\.?\s*([A-Z\/\s]+?\([A-Z/0-9]+\))/gmi)];
+      // Match all passengers on the line, not just start of line
+      const paxMatches = [...priceText.matchAll(/\d+\.\s*([A-Z\/\s]+?\([A-Z/0-9]+\))/gi)];
       for (const match of paxMatches) {
         passengers.push({
           name: match[1].trim(),
@@ -108,88 +130,144 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
   };
 
   const handleCheck = async () => {
-    const pnr = pnrInput.trim().toUpperCase();
+    const pnrs = parsePNRInput(pnrInput);
     
-    if (pnr.length !== 6) {
-      toast.error('Mã PNR phải gồm 6 ký tự');
+    if (pnrs.length === 0) {
+      toast.error('Vui lòng nhập ít nhất 1 mã PNR (mỗi PNR gồm 6 ký tự)');
       return;
     }
 
     setIsLoading(true);
+    const results: PNRResult[] = [];
 
-    try {
-      const response = await fetch(
-        `https://thuhongtour.com/beginReprice?pnr=${pnr}`
-      );
-      
-      const data = await response.json();
-      
-      // Check if response contains "IGNORED - {PNR}"
-      const responseText = data.model?.output?.crypticResponse?.response || '';
-      const isSuccess = responseText.includes(`IGNORED - ${pnr}`);
-      
-      if (isSuccess && data.pricegoc) {
-        const prices = parsePriceText(data.pricegoc);
-        setOriginalPrice(prices);
+    for (const pnr of pnrs) {
+      try {
+        const response = await fetch(
+          `https://thuhongtour.com/beginReprice?pnr=${pnr}`
+        );
         
-        // Auto-detect customer type from pricegoc
-        if (data.pricegoc.includes('RSTU')) {
-          setCustomerType('STU');
+        const data = await response.json();
+        
+        // Check if response contains "IGNORED - {PNR}"
+        const responseText = data.model?.output?.crypticResponse?.response || '';
+        const isSuccess = responseText.includes(`IGNORED - ${pnr}`);
+        
+        if (isSuccess && data.pricegoc) {
+          const prices = parsePriceText(data.pricegoc);
+          
+          // Auto-detect customer type from pricegoc
+          const detectedType = data.pricegoc.includes('RSTU') ? 'STU' : 'VFR';
+          
+          results.push({
+            pnr,
+            status: 'success',
+            originalPrice: prices,
+            customerType: detectedType
+          });
         } else {
-          setCustomerType('VFR');
+          results.push({
+            pnr,
+            status: 'error',
+            error: 'Kiểm tra PNR thất bại'
+          });
         }
-        
-        setStep('reprice');
-        toast.success('Kiểm tra PNR thành công');
-      } else {
-        toast.error('Kiểm tra PNR thất bại');
+      } catch (error) {
+        console.error(`Error checking PNR ${pnr}:`, error);
+        results.push({
+          pnr,
+          status: 'error',
+          error: 'Lỗi kết nối'
+        });
       }
-    } catch (error) {
-      console.error('Error checking PNR:', error);
-      toast.error('Lỗi kết nối');
     }
 
+    setPnrResults(results);
+    
+    // Set customer type for each successful result
+    const types: Record<string, string> = {};
+    results.forEach(result => {
+      if (result.status === 'success' && result.customerType) {
+        types[result.pnr] = result.customerType;
+      }
+    });
+    setCustomerTypes(types);
+    
     setIsLoading(false);
+    
+    const successCount = results.filter(r => r.status === 'success').length;
+    if (successCount > 0) {
+      setStep('reprice');
+      toast.success(`Kiểm tra thành công ${successCount}/${pnrs.length} PNR`);
+    } else {
+      toast.error('Tất cả PNR đều kiểm tra thất bại');
+    }
   };
 
   const handleReprice = async () => {
-    const pnr = pnrInput.trim().toUpperCase();
+    const successfulPNRs = pnrResults.filter(r => r.status === 'success');
+    
+    if (successfulPNRs.length === 0) {
+      toast.error('Không có PNR nào để reprice');
+      return;
+    }
     
     setIsLoading(true);
+    const results: PNRRepriceResult[] = [];
 
-    try {
-      const response = await fetch(
-        `https://thuhongtour.com/reprice?pnr=${pnr}&doituong=${customerType}`
-      );
-      
-      const data = await response.json();
-      
-      const responseText = JSON.stringify(data).toUpperCase();
-      const isSuccess = responseText.includes('TRANSACTION COMPLETE');
-      
-      if (isSuccess && data.pricegoc && data.pricemoi) {
-        const comparison = comparePrices(data.pricegoc, data.pricemoi);
-        setPriceComparison(comparison);
-        setStep('result');
-        toast.success('Reprice thành công');
-      } else {
-        toast.error('Reprice thất bại');
+    for (const result of successfulPNRs) {
+      try {
+        const pnrCustomerType = customerTypes[result.pnr] || 'VFR';
+        const response = await fetch(
+          `https://thuhongtour.com/reprice?pnr=${result.pnr}&doituong=${pnrCustomerType}`
+        );
+        
+        const data = await response.json();
+        
+        const responseText = JSON.stringify(data).toUpperCase();
+        const isSuccess = responseText.includes('TRANSACTION COMPLETE');
+        
+        if (isSuccess && data.pricegoc && data.pricemoi) {
+          const comparison = comparePrices(data.pricegoc, data.pricemoi);
+          results.push({
+            ...result,
+            priceComparison: comparison
+          });
+        } else {
+          results.push({
+            ...result,
+            status: 'error',
+            error: 'Reprice thất bại'
+          });
+        }
+      } catch (error) {
+        console.error(`Error repricing PNR ${result.pnr}:`, error);
+        results.push({
+          ...result,
+          status: 'error',
+          error: 'Lỗi kết nối'
+        });
       }
-    } catch (error) {
-      console.error('Error repricing:', error);
-      toast.error('Lỗi kết nối');
     }
 
+    setRepriceResults(results);
     setIsLoading(false);
+    
+    const successCount = results.filter(r => r.priceComparison).length;
+    if (successCount > 0) {
+      setStep('result');
+      toast.success(`Reprice thành công ${successCount}/${successfulPNRs.length} PNR`);
+    } else {
+      toast.error('Tất cả PNR đều reprice thất bại');
+    }
   };
 
   const handleReset = () => {
     setPnrInput('');
-    setCustomerType('VFR');
+    setCustomerTypes({});
     setStep('check');
-    setOriginalPrice([]);
-    setPriceComparison(null);
-    setShowDetails(false);
+    setPnrResults([]);
+    setRepriceResults([]);
+    setShowDetails({});
   };
 
   return (
@@ -206,22 +284,21 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
             <Label htmlFor="pnr-input">Mã PNR</Label>
             <Input
               id="pnr-input"
-              placeholder="Nhập mã PNR (6 ký tự)"
+              placeholder="Nhập mã PNR (phân tách bằng space, dấu phẩy hoặc dấu chấm phẩy)"
               value={pnrInput}
               onChange={(e) => setPnrInput(e.target.value)}
               className="mt-1"
               disabled={isLoading || step !== 'check'}
-              maxLength={6}
             />
             <p className="text-sm text-muted-foreground mt-1">
-              Mỗi PNR gồm 6 ký tự. Ví dụ: FM4NJ6
+              Mỗi PNR gồm 6 ký tự. Ví dụ: FM4NJ6 FM4NJ7 hoặc FM4NJ6,FM4NJ7
             </p>
           </div>
 
           {step === 'check' && (
             <Button
               onClick={handleCheck}
-              disabled={isLoading || pnrInput.trim().length !== 6}
+              disabled={isLoading || pnrInput.trim().length === 0}
               className="w-full"
             >
               {isLoading ? (
@@ -237,38 +314,65 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
 
           {step === 'reprice' && (
             <>
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold mb-3">Thông tin giá gốc:</h3>
-                <div className="space-y-2">
-                  {originalPrice.map((passenger, index) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span>{passenger.name}</span>
-                      <span className="font-semibold">{passenger.price.toLocaleString()} KRW</span>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                <h3 className="font-semibold">Kết quả kiểm tra:</h3>
+                {pnrResults.map((result, index) => (
+                  <div 
+                    key={index} 
+                    className={`p-3 rounded-lg border ${
+                      result.status === 'success' 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold">PNR: {result.pnr}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        result.status === 'success' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {result.status === 'success' ? 'Thành công' : 'Thất bại'}
+                      </span>
                     </div>
-                  ))}
-                  <div className="pt-2 mt-2 border-t flex justify-between font-bold">
-                    <span>Tổng:</span>
-                    <span>{originalPrice.reduce((sum, p) => sum + p.price, 0).toLocaleString()} KRW</span>
+                    
+                     {result.status === 'success' && result.originalPrice ? (
+                      <div className="space-y-2">
+                        <div className="space-y-1">
+                          {result.originalPrice.map((passenger, pIndex) => (
+                            <div key={pIndex} className="flex justify-between text-xs">
+                              <span>{passenger.name}</span>
+                              <span className="font-semibold">{passenger.price.toLocaleString()} KRW</span>
+                            </div>
+                          ))}
+                          <div className="pt-1 mt-1 border-t border-green-200 flex justify-between text-xs font-bold">
+                            <span>Tổng:</span>
+                            <span>{result.originalPrice.reduce((sum, p) => sum + p.price, 0).toLocaleString()} KRW</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Đối Tượng</Label>
+                          <Select 
+                            value={customerTypes[result.pnr] || 'VFR'} 
+                            onValueChange={(value) => setCustomerTypes(prev => ({ ...prev, [result.pnr]: value }))}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger className="h-8 text-xs mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ADT">ADT</SelectItem>
+                              <SelectItem value="VFR">VFR</SelectItem>
+                              <SelectItem value="STU">STU</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-red-600">{result.error}</p>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="customer-type">Đối Tượng</Label>
-                <Select 
-                  value={customerType} 
-                  onValueChange={setCustomerType}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger id="customer-type" className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADT">ADT</SelectItem>
-                    <SelectItem value="VFR">VFR</SelectItem>
-                    <SelectItem value="STU">STU</SelectItem>
-                  </SelectContent>
-                </Select>
+                ))}
               </div>
 
               <div className="flex gap-2">
@@ -298,73 +402,96 @@ export const RepriceModal: React.FC<RepriceModalProps> = ({
             </>
           )}
 
-          {step === 'result' && priceComparison && (
+          {step === 'result' && (
             <>
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold mb-3">Kết quả Reprice:</h3>
-                
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Giá cũ: </span>
-                      <span className="font-semibold">
-                        {priceComparison.oldTotal.toLocaleString()} KRW
-                      </span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Giá mới: </span>
-                      <span className="font-semibold">
-                        {priceComparison.newTotal.toLocaleString()} KRW
-                      </span>
-                    </div>
-                    <div
-                      className={`text-sm font-bold px-3 py-1 rounded ${
-                        priceComparison.newTotal < priceComparison.oldTotal
-                          ? 'bg-green-100 text-green-700'
-                          : priceComparison.newTotal > priceComparison.oldTotal
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {priceComparison.newTotal < priceComparison.oldTotal
-                        ? `↓ ${(priceComparison.oldTotal - priceComparison.newTotal).toLocaleString()} KRW`
-                        : priceComparison.newTotal > priceComparison.oldTotal
-                        ? `↑ ${(priceComparison.newTotal - priceComparison.oldTotal).toLocaleString()} KRW`
-                        : '= Không đổi'}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDetails(!showDetails)}
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                <h3 className="font-semibold">Kết quả Reprice:</h3>
+                {repriceResults.map((result, index) => (
+                  <div 
+                    key={index} 
+                    className={`p-3 rounded-lg border ${
+                      result.priceComparison 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-red-50 border-red-200'
+                    }`}
                   >
-                    {showDetails ? 'Ẩn chi tiết' : 'Chi tiết'}
-                  </Button>
-                </div>
-
-                {showDetails && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-semibold text-muted-foreground grid grid-cols-3 gap-2 pb-2 border-b">
-                      <div>Tên khách</div>
-                      <div className="text-right">Giá cũ</div>
-                      <div className="text-right">Giá mới</div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold">PNR: {result.pnr}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        result.priceComparison 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {result.priceComparison ? 'Thành công' : 'Thất bại'}
+                      </span>
                     </div>
-                    {priceComparison.passengers.map((passenger, pIndex) => (
-                      <div
-                        key={pIndex}
-                        className="text-xs grid grid-cols-3 gap-2 py-1 hover:bg-muted/50 rounded"
-                      >
-                        <div className="font-medium">{passenger.name}</div>
-                        <div className="text-right text-muted-foreground">
-                          {passenger.oldPrice.toLocaleString()} KRW
+                    
+                    {result.priceComparison ? (
+                      <>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Giá cũ: </span>
+                            <span className="font-semibold">
+                              {result.priceComparison.oldTotal.toLocaleString()} KRW
+                            </span>
+                          </div>
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Giá mới: </span>
+                            <span className="font-semibold">
+                              {result.priceComparison.newTotal.toLocaleString()} KRW
+                            </span>
+                          </div>
+                          <div
+                            className={`text-xs font-bold px-2 py-1 rounded ${
+                              result.priceComparison.newTotal < result.priceComparison.oldTotal
+                                ? 'bg-green-100 text-green-700'
+                                : result.priceComparison.newTotal > result.priceComparison.oldTotal
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {result.priceComparison.newTotal < result.priceComparison.oldTotal
+                              ? `↓ ${(result.priceComparison.oldTotal - result.priceComparison.newTotal).toLocaleString()}`
+                              : result.priceComparison.newTotal > result.priceComparison.oldTotal
+                              ? `↑ ${(result.priceComparison.newTotal - result.priceComparison.oldTotal).toLocaleString()}`
+                              : '= Không đổi'}
+                          </div>
                         </div>
-                        <div className="text-right text-muted-foreground">
-                          {passenger.newPrice.toLocaleString()} KRW
-                        </div>
-                      </div>
-                    ))}
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowDetails(prev => ({ ...prev, [result.pnr]: !prev[result.pnr] }))}
+                          className="h-6 text-xs"
+                        >
+                          {showDetails[result.pnr] ? 'Ẩn chi tiết' : 'Chi tiết'}
+                        </Button>
+
+                        {showDetails[result.pnr] && (
+                          <div className="space-y-1 mt-2 pt-2 border-t border-green-200">
+                            <div className="text-xs font-semibold text-muted-foreground grid grid-cols-3 gap-2 pb-1">
+                              <div>Tên khách</div>
+                              <div className="text-right">Giá cũ</div>
+                              <div className="text-right">Giá mới</div>
+                            </div>
+                            {result.priceComparison.passengers.map((passenger, pIndex) => (
+                              <div
+                                key={pIndex}
+                                className="text-xs grid grid-cols-3 gap-2 py-1"
+                              >
+                                <div className="font-medium">{passenger.name}</div>
+                                <div className="text-right">{passenger.oldPrice.toLocaleString()}</div>
+                                <div className="text-right">{passenger.newPrice.toLocaleString()}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-red-600">{result.error}</p>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
 
               <Button
