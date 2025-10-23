@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plane, Clock, Users, Copy, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { BookingModal } from './BookingModal';
+import { VNABookingModal } from './VNABookingModal';
 import { Button } from './ui/button';
 
 interface FlightLeg {
@@ -100,6 +101,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const [expandedDetails, setExpandedDetails] = useState<{ [key: number]: boolean }>({});
   const [expandedItinerary, setExpandedItinerary] = useState<{ [key: number]: boolean }>({});
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [vnaBookingModalOpen, setVnaBookingModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<FlightResult | null>(null);
 
   const toggleDetails = (index: number) => {
@@ -365,6 +367,20 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     setBookingModalOpen(true);
   };
 
+  const handleVNABooking = (result: FlightResult) => {
+    console.log('Selected VNA flight for booking:', result);
+    setSelectedFlight(result);
+    setVnaBookingModalOpen(true);
+  };
+
+  const formatDateForVNA = (dateStr: string) => {
+    // Convert "17/04/2026" to "17APR"
+    const [day, month] = dateStr.split('/');
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const monthIndex = parseInt(month) - 1;
+    return `${day}${monthNames[monthIndex]}`;
+  };
+
   const renderFlightCard = (result: FlightResult, index: number, flightNumber: number) => {
     const outbound = result['chiều đi'] || result['chiều_đi'];
     const inbound = result['chiều về'] || result['chiều_về'];
@@ -515,6 +531,18 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               <button
                 onClick={() => handleBooking(result)}
                 className="flex items-center space-x-1 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs transition-colors"
+              >
+                <span className="text-xs font-medium">Giữ Vé</span>
+              </button>
+            </div>
+          )}
+
+          {/* Booking Button - For VNA flights */}
+          {isVNA && (
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={() => handleVNABooking(result)}
+                className="flex items-center space-x-1 bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-colors"
               >
                 <span className="text-xs font-medium">Giữ Vé</span>
               </button>
@@ -786,18 +814,38 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
         {/* Booking Modal for two-column view */}
         {selectedFlight && (
-          <BookingModal
-            isOpen={bookingModalOpen}
-            onClose={() => {
-              setBookingModalOpen(false);
-              setSelectedFlight(null);
-            }}
-            bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
-            bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
-            tripType={searchData?.tripType || 'OW'}
-            departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
-            maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
-          />
+          <>
+            <BookingModal
+              isOpen={bookingModalOpen}
+              onClose={() => {
+                setBookingModalOpen(false);
+                setSelectedFlight(null);
+              }}
+              bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
+              bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
+              tripType={searchData?.tripType || 'OW'}
+              departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
+              maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+            />
+            
+            <VNABookingModal
+              isOpen={vnaBookingModalOpen}
+              onClose={() => {
+                setVnaBookingModalOpen(false);
+                setSelectedFlight(null);
+              }}
+              flightInfo={{
+                dep: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || '',
+                arr: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đến || '',
+                depdate: formatDateForVNA((selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || ''),
+                deptime: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.giờ_cất_cánh || '',
+                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg) ? formatDateForVNA((selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || '') : undefined,
+                arrtime: (selectedFlight['chiều_về'] as VNAFlightLeg)?.giờ_cất_cánh,
+                tripType: searchData?.tripType || 'OW'
+              }}
+              maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+            />
+          </>
         )}
       </div>
     );
@@ -825,20 +873,40 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         {singleColumnResults.map((result, index) => renderFlightCard(result, index, index + 1))}
       </div>
 
-        {/* Booking Modal */}
+        {/* Booking Modals */}
         {selectedFlight && (
-          <BookingModal
-            isOpen={bookingModalOpen}
-            onClose={() => {
-              setBookingModalOpen(false);
-              setSelectedFlight(null);
-            }}
-            bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
-            bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
-            tripType={searchData?.tripType || 'OW'}
-            departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
-            maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
-          />
+          <>
+            <BookingModal
+              isOpen={bookingModalOpen}
+              onClose={() => {
+                setBookingModalOpen(false);
+                setSelectedFlight(null);
+              }}
+              bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
+              bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
+              tripType={searchData?.tripType || 'OW'}
+              departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
+              maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+            />
+            
+            <VNABookingModal
+              isOpen={vnaBookingModalOpen}
+              onClose={() => {
+                setVnaBookingModalOpen(false);
+                setSelectedFlight(null);
+              }}
+              flightInfo={{
+                dep: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || '',
+                arr: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đến || '',
+                depdate: formatDateForVNA((selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || ''),
+                deptime: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.giờ_cất_cánh || '',
+                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg) ? formatDateForVNA((selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || '') : undefined,
+                arrtime: (selectedFlight['chiều_về'] as VNAFlightLeg)?.giờ_cất_cánh,
+                tripType: searchData?.tripType || 'OW'
+              }}
+              maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+            />
+          </>
         )}
     </div>
   );
