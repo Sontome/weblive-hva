@@ -10,6 +10,7 @@ import { EmailTicketModal } from '../components/EmailTicketModal';
 import { PNRCheckModal } from '../components/PNRCheckModal';
 import { CheckinModal } from '../components/CheckinModal';
 import { RepriceModal } from '../components/RepriceModal';
+import { VJTicketModal } from '../components/VJTicketModal';
 import { Button } from '@/components/ui/button';
 import { searchAllFlights } from '../services/flightService';
 import { shouldSkipVietjet } from '../utils/flightValidation';
@@ -57,6 +58,7 @@ const Index = () => {
   const [showPNRModal, setShowPNRModal] = useState(false);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showRepriceModal, setShowRepriceModal] = useState(false);
+  const [showVJTicketModal, setShowVJTicketModal] = useState(false);
 
   const playTingSound = () => {
     try {
@@ -286,19 +288,24 @@ const Index = () => {
         isOpen={showRepriceModal}
         onClose={() => setShowRepriceModal(false)}
       />
+      <VJTicketModal
+        isOpen={showVJTicketModal}
+        onClose={() => setShowVJTicketModal(false)}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                ✈️ Tìm kiếm vé máy bay
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Tìm kiếm và so sánh giá vé máy bay giữa Việt Nam và Hàn Quốc
-              </p>
-            </div>
+          <div className="flex justify-end items-start">
+            
             <div className="flex gap-3">
+              <Button
+                onClick={() => setShowVJTicketModal(true)}
+                variant="action-ticket"
+                size="default"
+                className="px-5"
+              >
+                🎫 Mặt vé chờ VJ
+              </Button>
               <Button
                 onClick={() => setShowRepriceModal(true)}
                 variant="action-reprice"
