@@ -43,6 +43,7 @@ export const VNABookingModal = ({
       type: 'người_lớn'
     }
   ]);
+  const [doiTuong, setDoiTuong] = useState<'VFR' | 'ADT' | 'STU'>('VFR');
   const [isLoading, setIsLoading] = useState(false);
   const [successData, setSuccessData] = useState<{ pnr: string } | null>(null);
 
@@ -155,7 +156,7 @@ export const VNABookingModal = ({
         params.append('arrtime', flightInfo.arrtime.replace(':', ''));
       }
       
-      params.append('doituong', 'VFR');
+      params.append('doituong', doiTuong);
 
       // Add passengers
       passengers.forEach(passenger => {
@@ -203,6 +204,19 @@ export const VNABookingModal = ({
           </DialogHeader>
 
           <div className="space-y-6">
+            <div>
+              <Label>Đối tượng</Label>
+              <Select value={doiTuong} onValueChange={(v: 'VFR' | 'ADT' | 'STU') => setDoiTuong(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VFR">VFR</SelectItem>
+                  <SelectItem value="ADT">ADT</SelectItem>
+                  <SelectItem value="STU">STU</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {passengers.map((passenger, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
