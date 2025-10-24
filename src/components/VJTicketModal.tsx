@@ -215,7 +215,20 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                         </div>
                       </div>
                       <div className="border border-t-0 rounded-b-lg p-4">
-                        <div className="mb-2 text-lg font-bold text-gray-800">{pnrData.chieudi.ngaycatcanh}</div>
+                        <div className="mb-2 text-lg font-semibold text-gray-800">
+                          {(() => {
+                            const dateStr = pnrData.chieudi.ngaycatcanh
+                            const parts = dateStr.includes('/')
+                              ? dateStr.split('/')
+                              : dateStr.split('-').reverse() // nếu là dạng yyyy-mm-dd thì đảo ngược lại
+                        
+                            const date = new Date(parts[2], parts[1] - 1, parts[0])
+                            const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+                            const dayName = weekdays[date.getDay()]
+                        
+                            return `${dayName}, ${parts.join('/')}`
+                          })()}
+                        </div>
                         <div className="flex justify-between items-center max-w-2xl">
                           <div className="flex-1">
                             <div className="text-2xl font-bold text-gray-800">{pnrData.chieudi.departure}</div>
@@ -258,7 +271,20 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                         </div>
                       </div>
                       <div className="border border-t-0 rounded-b-lg p-4">
-                        <div className="mb-2 text-lg font-bold text-gray-800">{pnrData.chieuve.ngaycatcanh}</div>
+                         <div className="mb-2 text-lg font-semibold text-gray-800">
+                          {(() => {
+                            const dateStr = pnrData.chieuve.ngaycatcanh
+                            const parts = dateStr.includes('/')
+                              ? dateStr.split('/')
+                              : dateStr.split('-').reverse() // nếu là dạng yyyy-mm-dd thì đảo ngược lại
+                        
+                            const date = new Date(parts[2], parts[1] - 1, parts[0])
+                            const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+                            const dayName = weekdays[date.getDay()]
+                        
+                            return `${dayName}, ${parts.join('/')}`
+                          })()}
+                        </div>
                         <div className="flex justify-between items-center max-w-2xl">
                           <div className="flex-1">
                             <div className="text-2xl font-bold text-gray-800">{pnrData.chieuve.departure}</div>
