@@ -60,17 +60,19 @@
     --custom-price: 142.1 76.2% 36.3%;
     --custom-price-foreground: 0 0% 100%;
 
-    /* Professional action button colors */
-    --action-reprice: 25 95% 53%;
-    --action-reprice-foreground: 0 0% 100%;
-    --action-checkin: 262 83% 58%;
-    --action-checkin-foreground: 0 0% 100%;
-    --action-image: 152 69% 31%;
-    --action-image-foreground: 0 0% 100%;
-    --action-email: 221 83% 53%;
-    --action-email-foreground: 0 0% 100%;
-    --action-logout: 0 72% 51%;
-    --action-logout-foreground: 0 0% 100%;
+    /* Action button colors - neutral */
+    --action-ticket: 0 0% 100%;
+    --action-ticket-foreground: 0 0% 20%;
+    --action-reprice: 0 0% 100%;
+    --action-reprice-foreground: 0 0% 20%;
+    --action-checkin: 0 0% 100%;
+    --action-checkin-foreground: 0 0% 20%;
+    --action-image: 0 0% 100%;
+    --action-image-foreground: 0 0% 20%;
+    --action-email: 0 0% 100%;
+    --action-email-foreground: 0 0% 20%;
+    --action-logout: 0 0% 100%;
+    --action-logout-foreground: 0 0% 20%;
   }
 
   .dark {
@@ -118,17 +120,19 @@
     --custom-price: 142.1 70.6% 45.3%;
     --custom-price-foreground: 0 0% 100%;
 
-    /* Professional action button colors in dark mode */
-    --action-reprice: 25 95% 53%;
-    --action-reprice-foreground: 0 0% 100%;
-    --action-checkin: 262 83% 58%;
-    --action-checkin-foreground: 0 0% 100%;
-    --action-image: 152 69% 41%;
-    --action-image-foreground: 0 0% 100%;
-    --action-email: 221 83% 53%;
-    --action-email-foreground: 0 0% 100%;
-    --action-logout: 0 72% 51%;
-    --action-logout-foreground: 0 0% 100%;
+    /* Action button colors in dark mode - neutral */
+    --action-ticket: 240 5.9% 10%;
+    --action-ticket-foreground: 0 0% 98%;
+    --action-reprice: 240 5.9% 10%;
+    --action-reprice-foreground: 0 0% 98%;
+    --action-checkin: 240 5.9% 10%;
+    --action-checkin-foreground: 0 0% 98%;
+    --action-image: 240 5.9% 10%;
+    --action-image-foreground: 0 0% 98%;
+    --action-email: 240 5.9% 10%;
+    --action-email-foreground: 0 0% 98%;
+    --action-logout: 240 5.9% 10%;
+    --action-logout-foreground: 0 0% 98%;
   }
 }
 
