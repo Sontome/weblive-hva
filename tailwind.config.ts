@@ -73,6 +73,30 @@ export default {
 				'custom-price': {
 					DEFAULT: 'hsl(var(--custom-price))',
 					foreground: 'hsl(var(--custom-price-foreground))'
+				},
+				'action-ticket': {
+					DEFAULT: 'hsl(var(--action-ticket))',
+					foreground: 'hsl(var(--action-ticket-foreground))'
+				},
+				'action-reprice': {
+					DEFAULT: 'hsl(var(--action-reprice))',
+					foreground: 'hsl(var(--action-reprice-foreground))'
+				},
+				'action-checkin': {
+					DEFAULT: 'hsl(var(--action-checkin))',
+					foreground: 'hsl(var(--action-checkin-foreground))'
+				},
+				'action-image': {
+					DEFAULT: 'hsl(var(--action-image))',
+					foreground: 'hsl(var(--action-image-foreground))'
+				},
+				'action-email': {
+					DEFAULT: 'hsl(var(--action-email))',
+					foreground: 'hsl(var(--action-email-foreground))'
+				},
+				'action-logout': {
+					DEFAULT: 'hsl(var(--action-logout))',
+					foreground: 'hsl(var(--action-logout-foreground))'
 				}
 			},
 			borderRadius: {
