@@ -70,19 +70,19 @@ interface FlightResultsProps {
     roundTripFeeVietjet: number;
     roundTripFeeVNA: number;
     vnaThreshold1: number;
-    vnaDiscount1: number; // Default 0 for PAGE
+    vnaDiscount1: number;
     vnaThreshold2: number;
-    vnaDiscount2: number; // Default 0 for PAGE
+    vnaDiscount2: number;
     vietjetThreshold1: number;
-    vietjetDiscount1: number; // Default 0 for PAGE
+    vietjetDiscount1: number;
     vietjetThreshold2: number;
-    vietjetDiscount2: number; // Default 0 for PAGE
-    
+    vietjetDiscount2: number;
   } | null;
   apiStatus: { vj: string; vna: string };
   searchMessages?: string[];
   hasSearched?: boolean;
   vietjetDomesticError?: boolean;
+  onVJBookingSuccess?: (pnr: string) => void;
 }
 
 const FlightResults: React.FC<FlightResultsProps> = ({ 
@@ -96,7 +96,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   apiStatus,
   searchMessages = [],
   hasSearched = false,
-  vietjetDomesticError = false
+  vietjetDomesticError = false,
+  onVJBookingSuccess
 }) => {
   const [expandedDetails, setExpandedDetails] = useState<{ [key: number]: boolean }>({});
   const [expandedItinerary, setExpandedItinerary] = useState<{ [key: number]: boolean }>({});
@@ -826,6 +827,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               tripType={searchData?.tripType || 'OW'}
               departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
               maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+              onBookingSuccess={onVJBookingSuccess}
             />
             
             <VNABookingModal
@@ -887,6 +889,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               tripType={searchData?.tripType || 'OW'}
               departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
               maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+              onBookingSuccess={onVJBookingSuccess}
             />
             
             <VNABookingModal
