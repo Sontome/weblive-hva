@@ -9,6 +9,7 @@ import { Copy, User } from 'lucide-react';
 interface VJTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialPNR?: string;
 }
 
 interface ChieuBay {
@@ -45,20 +46,32 @@ interface PNRData {
   passengers: Passenger[];
 }
 
-export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose }) => {
+export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, initialPNR }) => {
   const [pnr, setPnr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pnrData, setPnrData] = useState<PNRData | null>(null);
 
-  const handleCheck = async () => {
-    if (!pnr.trim()) {
+  // Auto-check when initialPNR is provided
+  React.useEffect(() => {
+    if (isOpen && initialPNR && !pnrData) {
+      setPnr(initialPNR);
+      // Auto-check after setting PNR
+      setTimeout(() => {
+        handleCheck(initialPNR);
+      }, 100);
+    }
+  }, [isOpen, initialPNR]);
+
+  const handleCheck = async (pnrToCheck?: string) => {
+    const checkPnr = pnrToCheck || pnr;
+    if (!checkPnr.trim()) {
       toast.error('Vui lòng nhập PNR');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(`https://thuhongtour.com/vj/checkpnr?pnr=${pnr.trim()}`, {
+      const response = await fetch(`https://thuhongtour.com/vj/checkpnr?pnr=${checkPnr.trim()}`, {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -124,7 +137,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                   }}
                 />
               </div>
-              <Button onClick={handleCheck} disabled={isLoading} className="w-full">
+              <Button onClick={() => handleCheck()} disabled={isLoading} className="w-full">
                 {isLoading ? 'Đang kiểm tra...' : 'Kiểm tra'}
               </Button>
             </div>
@@ -222,7 +235,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                               ? dateStr.split('/')
                               : dateStr.split('-').reverse() // nếu là dạng yyyy-mm-dd thì đảo ngược lại
                         
-                            const date = new Date(parts[2], parts[1] - 1, parts[0])
+                            const date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
                             const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
                             const dayName = weekdays[date.getDay()]
                         
@@ -242,12 +255,12 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                               const [gio, phut] = t.split(":");
                               return `${gio} giờ ${phut} phút`;
                             })()}</div>
-                            <div class="relative h-8">
-                              <div class=" w-full absolute "></div>
+                            <div className="relative h-8">
+                              <div className=" w-full absolute "></div>
                               <img
                                 src="https://raw.githubusercontent.com/Sontome/icon/refs/heads/main/flyiconVJ.svg"
                                 alt="plane icon"
-                                class="absolute  left-1/2 transform -translate-x-1/2"
+                                className="absolute  left-1/2 transform -translate-x-1/2"
                               />
                             </div>
                             <div className="text-sm text-gray-600  font-semibold">{pnrData.chieudi.sohieumaybay}</div>
@@ -278,7 +291,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                               ? dateStr.split('/')
                               : dateStr.split('-').reverse() // nếu là dạng yyyy-mm-dd thì đảo ngược lại
                         
-                            const date = new Date(parts[2], parts[1] - 1, parts[0])
+                            const date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
                             const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
                             const dayName = weekdays[date.getDay()]
                         
@@ -298,12 +311,12 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose })
                               const [gio, phut] = t.split(":");
                               return `${gio} giờ ${phut} phút`;
                             })()}</div>
-                            <div class="relative h-8">
-                              <div class=" w-full absolute "></div>
+                            <div className="relative h-8">
+                              <div className=" w-full absolute "></div>
                               <img
                                 src="https://raw.githubusercontent.com/Sontome/icon/refs/heads/main/flyiconVJ.svg"
                                 alt="plane icon"
-                                class="absolute  left-1/2 transform -translate-x-1/2"
+                                className="absolute  left-1/2 transform -translate-x-1/2"
                               />
                             </div>
                             <div className="text-sm text-gray-600  font-semibold ">{pnrData.chieuve.sohieumaybay}</div>
