@@ -170,7 +170,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
               {!pnrData.paymentstatus && (
                 <div className="px-4 py-3 rounded" style={{ backgroundColor: '#fffad6' }}>
                   <p className="text-lg text-black font-semibold">
-                    Tổng tiền: <span className="text-red-600">{pnrData.tongbillgiagoc}</span> <span className="text-gray-800">{pnrData.currency}</span> 
+                    Tổng tiền: <span className="text-red-600"> {Math.round(pnrData.tongbillgiagoc).toLocaleString('en-US')}</span> <span className="text-gray-800">{pnrData.currency}</span> 
                   </p>
                 </div>
               )}
