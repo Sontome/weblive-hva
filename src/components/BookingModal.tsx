@@ -247,7 +247,7 @@ export const BookingModal = ({
             setSuccessData(null);
             onClose();
             onBookingSuccess(data.mã_giữ_vé);
-          }, 1500);
+          }, 100);
         }
       } else {
         toast({
