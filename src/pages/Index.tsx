@@ -59,6 +59,7 @@ const Index = () => {
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showRepriceModal, setShowRepriceModal] = useState(false);
   const [showVJTicketModal, setShowVJTicketModal] = useState(false);
+  const [vjTicketInitialPNR, setVjTicketInitialPNR] = useState<string | undefined>(undefined);
 
   const playTingSound = () => {
     try {
@@ -290,7 +291,11 @@ const Index = () => {
       />
       <VJTicketModal
         isOpen={showVJTicketModal}
-        onClose={() => setShowVJTicketModal(false)}
+        onClose={() => {
+          setShowVJTicketModal(false);
+          setVjTicketInitialPNR(undefined);
+        }}
+        initialPNR={vjTicketInitialPNR}
       />
       {/* Header */}
       <div className="bg-white shadow-sm">
@@ -378,6 +383,10 @@ const Index = () => {
           searchMessages={searchMessages}
           hasSearched={hasSearched}
           vietjetDomesticError={vietjetDomesticError}
+          onVJBookingSuccess={(pnr) => {
+            setVjTicketInitialPNR(pnr);
+            setShowVJTicketModal(true);
+          }}
         />
       </div>
     </div>
