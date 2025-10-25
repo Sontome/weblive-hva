@@ -222,12 +222,13 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                   {/* Outbound Flight */}
                   {pnrData.chieudi && (
                     <div>
-                      <div className="border rounded-t-lg overflow-hidden">
+                      <div className="border rounded-t-lg overflow-hidden" style={{ boxShadow: '0 -2px 5px 3px rgba(0,0,0,0.15)' }}>
+                        
                         <div className="px-4 py-3 font-bold text-lg text-gray-700" style={{ backgroundColor: '#c9efff' }}>
                           Chặng 1
                         </div>
                       </div>
-                      <div className="border border-t-0 rounded-b-lg p-4">
+                      <div className="border border-t-0 rounded-b-lg p-4" style={{ boxShadow: '0 2px 5px 3px rgba(0,0,0,0.15)' }}>
                         <div className="mb-2 text-lg font-semibold text-gray-800">
                           {(() => {
                             const dateStr = pnrData.chieudi.ngaycatcanh
@@ -278,12 +279,12 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                   {/* Return Flight */}
                   {pnrData.chieuve && Object.keys(pnrData.chieuve).length > 0 && (
                     <div className="mt-4">
-                      <div className="border rounded-t-lg overflow-hidden">
+                      <div className="border rounded-t-lg overflow-hidden" style={{ boxShadow: '0 -2px 5px 3px rgba(0,0,0,0.15)' }}>
                         <div className="px-4 py-3 font-bold text-lg text-gray-700" style={{ backgroundColor: '#c9efff' }}>
                           Chặng 2
                         </div>
                       </div>
-                      <div className="border border-t-0 rounded-b-lg p-4">
+                      <div className="border border-t-0 rounded-b-lg p-4" style={{ boxShadow: '0 2px 5px 3px rgba(0,0,0,0.15)' }}>
                          <div className="mb-2 text-lg font-semibold text-gray-800">
                           {(() => {
                             const dateStr = pnrData.chieuve.ngaycatcanh
