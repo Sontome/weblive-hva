@@ -28,6 +28,7 @@ interface BookingModalProps {
   tripType: 'OW' | 'RT';
   departureAirport: string;
   maxSeats: number;
+  onBookingSuccess?: (pnr: string) => void;
 }
 
 export const BookingModal = ({
@@ -37,7 +38,8 @@ export const BookingModal = ({
   bookingKeyReturn,
   tripType,
   departureAirport,
-  maxSeats
+  maxSeats,
+  onBookingSuccess
 }: BookingModalProps) => {
   const [passengers, setPassengers] = useState<PassengerWithType[]>([
     {
@@ -239,6 +241,14 @@ export const BookingModal = ({
 
       if (data.mã_giữ_vé) {
         setSuccessData({ code: data.mã_giữ_vé, deadline: data.hạn_thanh_toán });
+        // Call callback and auto-open ticket modal
+        if (onBookingSuccess) {
+          setTimeout(() => {
+            setSuccessData(null);
+            onClose();
+            onBookingSuccess(data.mã_giữ_vé);
+          }, 1500);
+        }
       } else {
         toast({
           title: "Lỗi giữ vé",
