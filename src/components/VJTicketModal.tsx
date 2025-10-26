@@ -231,7 +231,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                         {passenger.phonenumber && (
                           <div>
                             <span className="text-lg">Số điện thoại: </span>
-                            <span className="font-semibold text-lg">{passenger.phonenumber}</span>
+                            <span className="font-semibold text-lg">(+82) {passenger.phonenumber}</span>
                           </div>
                         )}
                         {passenger.email && (
