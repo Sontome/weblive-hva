@@ -293,7 +293,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                             <div className="relative h-8">
                               <div className=" w-full absolute "></div>
                               <img
-                                src="https://raw.githubusercontent.com/Sontome/icon/refs/heads/main/flyiconVJ.svg"
+                                src="/icon/flyiconVJ.svg" alt="plane icon"
                                 alt="plane icon"
                                 className="absolute  left-1/2 transform -translate-x-1/2"
                               />
@@ -349,7 +349,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                             <div className="relative h-8">
                               <div className=" w-full absolute "></div>
                               <img
-                                src="https://raw.githubusercontent.com/Sontome/icon/refs/heads/main/flyiconVJ.svg"
+                                src="/icon/flyiconVJ.svg" alt="plane icon"
                                 alt="plane icon"
                                 className="absolute  left-1/2 transform -translate-x-1/2"
                               />
