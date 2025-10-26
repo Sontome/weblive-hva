@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState ,useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Copy, User } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { Camera } from 'lucide-react';
 
 interface VJTicketModalProps {
   isOpen: boolean;
@@ -50,6 +52,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
   const [pnr, setPnr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pnrData, setPnrData] = useState<PNRData | null>(null);
+  const captureRef = useRef<HTMLDivElement>(null); 
 
   // Auto-check when initialPNR is provided
   React.useEffect(() => {
@@ -61,7 +64,28 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
       }, 100);
     }
   }, [isOpen, initialPNR]);
-
+  const handleCapture = async () => {
+    if (!captureRef.current) return;
+    try {
+      const canvas = await html2canvas(captureRef.current, { scale: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/png')
+      );
+      if (!blob) throw new Error('Không tạo được ảnh');
+  
+      // ✅ Copy ảnh vào clipboard
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': blob,
+        }),
+      ]);
+  
+      toast.success('Ảnh vé đã được copy vào clipboard ✈️');
+    } catch (err) {
+      console.error(err);
+      toast.error('Lỗi khi copy ảnh vé vào clipboard');
+    }
+  };
   const handleCheck = async (pnrToCheck?: string) => {
     const checkPnr = pnrToCheck || pnr;
     if (!checkPnr.trim()) {
@@ -145,7 +169,17 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
 
           {/* PNR Data Display */}
           {pnrData && (
-            <div className="space-y-5">
+            <div className="space-y-5 relative">
+              {/* 📸 Nút chụp ảnh góc phải */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleCapture}
+                className="absolute top-0 right-0 bg-white border hover:bg-gray-100"
+                title="Chụp ảnh vé"
+              >
+                <Camera className="h-5 w-5 text-gray-700" />
+              </Button>
               {/* PNR Header */}
               <div className="text-2xl font-bold text-gray-800">
                 Mã đặt chỗ {pnrData.pnr}
@@ -174,7 +208,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                   </p>
                 </div>
               )}
-
+              <div ref={captureRef}>
               {/* Passenger Information */}
               <div className="border rounded-lg overflow-hidden">
                 <div className="px-4 py-3 font-bold text-lg text-gray-700  ">
@@ -334,7 +368,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                 </div>
                   </div>
               </div>
-
+              </div>
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t">
                 <Button
