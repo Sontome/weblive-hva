@@ -225,7 +225,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
               
               <div className="bg-white p-4 gap-4">
                 <div className="mb-4 flex gap-4 justify-between">
-                  <b className="text-lg font-bold">Passenger information</b>
+                  <b className="text-lg font-bold">Thông Tin Hành Khách</b>
                 </div>
 
                 <div className="flex flex-col gap-3">
