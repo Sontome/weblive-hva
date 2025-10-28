@@ -187,7 +187,6 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
 
               {/* Header */}
               <div className="flex items-center bg-white p-4">
-                
                 <b className="text-base lg:text-xl ml-2">
                   <span className="text-cyan-600">{pnrData.pnr}</span>
                 </b>
@@ -200,6 +199,15 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {pnrData.doituong && (
+                <div className="mt-2 ml-4">
+                  <p className="text-base text-gray-800 font-semibold">
+                    Đối tượng: <span className="text-cyan-700 font-bold text-xl">{pnrData.doituong}</span>
+                  </p>
+                </div>
+              )}
+              
               {!pnrData.paymentstatus && (
                 <div className="px-4 py-3 rounded" style={{ backgroundColor: '#fffad6' }}>
                   <p className="text-lg text-black font-semibold">
