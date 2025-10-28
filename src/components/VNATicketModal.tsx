@@ -129,7 +129,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
   const formatDate = (dateStr: string) => {
     const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-').reverse();
     const date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const weekdays = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
     const dayName = weekdays[date.getDay()];
     return `${dayName}, ${parts.join('/')}`;
   };
@@ -236,7 +236,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                           <div className="flex items-center gap-1">
                             <div className="flex">
                               <span className="font-bold text-sm lg:text-base">
-                                Passenger {index + 1} - {passenger.lastName} {passenger.firstName} 
+                                Hành Khách {index + 1} - {passenger.lastName} {passenger.firstName} 
                               </span>
                             </div>
                           </div>
@@ -250,7 +250,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
               {/* Itinerary */}
               <div className="bg-white p-4">
                 <div className="flex justify-between mb-5">
-                  <p className="text-lg font-bold">Itinerary</p>
+                  <p className="text-lg font-bold">Chặng Bay</p>
                 </div>
                 
                 <div className="flex flex-col gap-4">
@@ -282,7 +282,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                             <div className="flex items-center">
                               <div className="h-3 w-3 rounded-full border-2 border-solid border-cyan-700"></div>
                               <div className="w-[110px] text-center">
-                                <p className="whitespace-nowrap">Non stop</p>
+                                <p className="whitespace-nowrap">Bay thẳng</p>
                                 <hr />
                                 <p className="whitespace-nowrap">{formatDuration(segment.thoigianbay)}</p>
                               </div>
@@ -307,7 +307,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex">
-                              <p className="cursor-pointer text-base font-medium text-blue-600 underline">More details</p>
+                              <p className="cursor-pointer text-base font-medium text-blue-600 underline">Thêm thông tin</p>
                             </div>
                           </div>
                         </div>
@@ -315,12 +315,12 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                         {/* Class */}
                         <div className="ml-0 flex flex-col items-center">
                           <div className="text-center font-medium text-[#535E71]">Class</div>
-                          <div className="text-center text-[#1B2132]">Economy ({segment.loaive})</div>
+                          <div className="text-center text-[#1B2132]">Phổ thông ({segment.loaive})</div>
                         </div>
 
                         {/* Status */}
                         <div className="ml-0 lg:ml-8 inline-flex flex-col items-center justify-center">
-                          <div className="text-center font-medium text-[#535E71]">Segment status</div>
+                          <div className="text-center font-medium text-[#535E71]">Trạng thái</div>
                           <div className="text-[#1B2132]">{segment.status}</div>
                         </div>
 
@@ -328,7 +328,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                         <div className="mx-auto mt-4">
                           {pnrData.paymentstatus ? (
                             <div className="flex h-[30px] w-fit items-center whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-bold bg-[#DCFCD9] text-[#075835] -translate-y-[2px]">
-                              Ticketed
+                              Đã thanh toán
                             </div>
                           ) : (
                             <div className="flex h-[30px] w-fit items-center whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-bold bg-[#FFDADA] text-[#B50000]">
