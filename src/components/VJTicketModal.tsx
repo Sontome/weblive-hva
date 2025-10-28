@@ -66,25 +66,34 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
   }, [isOpen, initialPNR]);
   const handleCapture = async () => {
     if (!captureRef.current) return;
-    try {
-      const canvas = await html2canvas(captureRef.current, { scale: 2 });
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/png')
-      );
-      if (!blob) throw new Error('Không tạo được ảnh');
   
-      // ✅ Copy ảnh vào clipboard
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'image/png': blob,
-        }),
-      ]);
+    // ✅ Clone phần tử ra ngoài body
+    const clone = captureRef.current.cloneNode(true) as HTMLElement;
+    clone.style.position = 'absolute';
+    clone.style.top = '-9999px';
+    clone.style.left = '-9999px';
+    clone.style.boxShadow = 'inherit';
+    document.body.appendChild(clone);
   
-      toast.success('Ảnh vé đã được copy vào clipboard ✈️');
-    } catch (err) {
-      console.error(err);
-      toast.error('Lỗi khi copy ảnh vé vào clipboard');
-    }
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      backgroundColor: null,
+      useCORS: true,
+    });
+  
+    document.body.removeChild(clone); // dọn rác 😎
+  
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/png')
+    );
+    if (!blob) throw new Error('Không tạo được ảnh');
+  
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'image/png': blob,
+      }),
+    ]);
+    toast.success('Ảnh vé đã được copy vào clipboard ✈️');
   };
   const handleCheck = async (pnrToCheck?: string) => {
     const checkPnr = pnrToCheck || pnr;
@@ -256,7 +265,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                   {/* Outbound Flight */}
                   {pnrData.chieudi && (
                     <div>
-                      <div className="border rounded-t-lg overflow-hidden" style={{ boxShadow: '0 -2px 5px 3px rgba(0,0,0,0.15)' }}>
+                      <div className="border rounded-t-lg overflow-hidden" style={{ filter: 'drop-shadow(0 -2px 5px rgba(0,0,0,0.15))',boxShadow: '0 -2px 5px 3px rgba(0,0,0,0.15)' }}>
                         
                         <div className="px-4 py-3 font-bold text-lg text-gray-700" style={{ backgroundColor: '#c9efff' }}>
                           Chặng 1
@@ -293,7 +302,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                             <div className="relative h-8">
                               <div className=" w-full absolute "></div>
                               <img
-                                src="/icon/flyiconVJ.svg" alt="plane icon"
+                                src="/icon/flyiconVJ.svg"
                                 alt="plane icon"
                                 className="absolute  left-1/2 transform -translate-x-1/2"
                               />
@@ -349,7 +358,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
                             <div className="relative h-8">
                               <div className=" w-full absolute "></div>
                               <img
-                                src="/icon/flyiconVJ.svg" alt="plane icon"
+                                src="/icon/flyiconVJ.svg"
                                 alt="plane icon"
                                 className="absolute  left-1/2 transform -translate-x-1/2"
                               />
