@@ -11,6 +11,7 @@ import { PNRCheckModal } from '../components/PNRCheckModal';
 import { CheckinModal } from '../components/CheckinModal';
 import { RepriceModal } from '../components/RepriceModal';
 import { VJTicketModal } from '../components/VJTicketModal';
+import { VNATicketModal } from '../components/VNATicketModal';
 import { Button } from '@/components/ui/button';
 import { searchAllFlights } from '../services/flightService';
 import { shouldSkipVietjet } from '../utils/flightValidation';
@@ -60,6 +61,8 @@ const Index = () => {
   const [showRepriceModal, setShowRepriceModal] = useState(false);
   const [showVJTicketModal, setShowVJTicketModal] = useState(false);
   const [vjTicketInitialPNR, setVjTicketInitialPNR] = useState<string | undefined>(undefined);
+  const [showVNATicketModal, setShowVNATicketModal] = useState(false);
+  const [vnaTicketInitialPNR, setVnaTicketInitialPNR] = useState<string | undefined>(undefined);
 
   const playTingSound = () => {
     try {
@@ -297,6 +300,14 @@ const Index = () => {
         }}
         initialPNR={vjTicketInitialPNR}
       />
+      <VNATicketModal
+        isOpen={showVNATicketModal}
+        onClose={() => {
+          setShowVNATicketModal(false);
+          setVnaTicketInitialPNR(undefined);
+        }}
+        initialPNR={vnaTicketInitialPNR}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -310,6 +321,14 @@ const Index = () => {
                 className="px-5"
               >
                 🎫 Mặt vé chờ VJ
+              </Button>
+              <Button
+                onClick={() => setShowVNATicketModal(true)}
+                variant="action-ticket"
+                size="default"
+                className="px-5"
+              >
+                🎫 Mặt vé chờ VNA
               </Button>
               <Button
                 onClick={() => setShowRepriceModal(true)}
@@ -386,6 +405,10 @@ const Index = () => {
           onVJBookingSuccess={(pnr) => {
             setVjTicketInitialPNR(pnr);
             setShowVJTicketModal(true);
+          }}
+          onVNABookingSuccess={(pnr) => {
+            setVnaTicketInitialPNR(pnr);
+            setShowVNATicketModal(true);
           }}
         />
       </div>
