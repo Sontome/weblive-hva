@@ -83,6 +83,7 @@ interface FlightResultsProps {
   hasSearched?: boolean;
   vietjetDomesticError?: boolean;
   onVJBookingSuccess?: (pnr: string) => void;
+  onVNABookingSuccess?: (pnr: string) => void;
 }
 
 const FlightResults: React.FC<FlightResultsProps> = ({ 
@@ -97,7 +98,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   searchMessages = [],
   hasSearched = false,
   vietjetDomesticError = false,
-  onVJBookingSuccess
+  onVJBookingSuccess,
+  onVNABookingSuccess
 }) => {
   const [expandedDetails, setExpandedDetails] = useState<{ [key: number]: boolean }>({});
   const [expandedItinerary, setExpandedItinerary] = useState<{ [key: number]: boolean }>({});
@@ -846,6 +848,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
                 tripType: searchData?.tripType || 'OW'
               }}
               maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+              onBookingSuccess={onVNABookingSuccess}
             />
           </>
         )}
@@ -908,6 +911,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
                 tripType: searchData?.tripType || 'OW'
               }}
               maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+              onBookingSuccess={onVNABookingSuccess}
             />
           </>
         )}
