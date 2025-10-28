@@ -79,7 +79,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
   
     const canvas = await html2canvas(clone, {
       scale: 2,
-      backgroundColor: null,
+      backgroundColor: '#ffffff',
       useCORS: true,
     });
   
