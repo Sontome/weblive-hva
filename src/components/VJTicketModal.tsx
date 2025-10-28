@@ -73,7 +73,8 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
     clone.style.top = '-9999px';
     clone.style.left = '-9999px';
     clone.style.background = '#fff'; 
-    clone.style.boxShadow = 'inherit';
+    clone.style.boxShadow = 'none';
+    clone.style.filter = 'none';
     document.body.appendChild(clone);
   
     const canvas = await html2canvas(clone, {
