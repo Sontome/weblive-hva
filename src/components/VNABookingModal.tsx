@@ -27,13 +27,15 @@ interface VNABookingModalProps {
     tripType: 'OW' | 'RT';
   };
   maxSeats: number;
+  onBookingSuccess?: (pnr: string) => void;
 }
 
 export const VNABookingModal = ({
   isOpen,
   onClose,
   flightInfo,
-  maxSeats
+  maxSeats,
+  onBookingSuccess
 }: VNABookingModalProps) => {
   const [passengers, setPassengers] = useState<PassengerInfo[]>([
     {
@@ -175,6 +177,13 @@ export const VNABookingModal = ({
 
       if (data.status === 'OK' && data.pnr) {
         setSuccessData({ pnr: data.pnr });
+        
+        // Auto close after 1.5s and trigger callback
+        setTimeout(() => {
+          setSuccessData(null);
+          onClose();
+          onBookingSuccess?.(data.pnr);
+        }, 1500);
       } else {
         toast({
           title: "Lỗi giữ vé",
