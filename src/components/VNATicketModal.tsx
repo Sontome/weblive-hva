@@ -225,7 +225,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
               
               <div className="bg-white p-4 gap-4">
                 <div className="mb-4 flex gap-4 justify-between">
-                  <b className="text-lg font-bold">Thông Tin Hành Khách</b>
+                  <b className="text-lg font-bold relative -translate-y-[8px]">Thông Tin Hành Khách</b>
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -235,7 +235,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                         <div className="flex justify-between py-3 items-center">
                           <div className="flex items-center gap-1">
                             <div className="flex">
-                              <span className="font-bold text-sm lg:text-base">
+                              <span className="font-bold text-sm lg:text-base relative -translate-y-[8px]">
                                 Hành Khách {index + 1} - {passenger.lastName} {passenger.firstName} 
                               </span>
                             </div>
@@ -259,12 +259,12 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                       <div className="flex flex-col lg:flex-row w-full flex-wrap items-center gap-2 lg:gap-5">
                         {/* Segment number */}
                         <div className="h-7 w-7 rounded bg-[#2898A1] text-center font-medium text-white flex items-center justify-center">
-                          {segment.sochang}
+                          <span className="relative -translate-y-[8px]">{segment.sochang}</span>
                         </div>
 
                         {/* Date and flight info */}
                         <div className="flex flex-col lg:flex-row items-center justify-center gap-1">
-                          <div className="text-center mr-3 w-[120px]">
+                          <div className="text-center mr-3 w-[120px] relative -translate-y-[8px]">
                             <p className="text-xl font-medium text-[#005463] first-letter:uppercase">
                               {formatDate(segment.ngaycatcanh).split(',')[0]}
                             </p>
@@ -274,7 +274,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                           </div>
 
                           <div className="flex items-center justify-between w-[260px]">
-                            <div className="flex flex-col items-center gap-4">
+                            <div className="flex flex-col items-center gap-4 relative -translate-y-[8px]">
                               <p className="text-lg font-medium">{segment.departure}</p>
                               <p>{segment.giocatcanh}</p>
                             </div>
@@ -282,14 +282,14 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                             <div className="flex items-center">
                               <div className="h-3 w-3 rounded-full border-2 border-solid border-cyan-700"></div>
                               <div className="w-[110px] text-center">
-                                <p className="whitespace-nowrap">Bay thẳng</p>
+                                <p className="whitespace-nowrap relative -translate-y-[8px]">Bay thẳng</p>
                                 <hr />
-                                <p className="whitespace-nowrap">{formatDuration(segment.thoigianbay)}</p>
+                                <p className="whitespace-nowrap relative -translate-y-[8px]">{formatDuration(segment.thoigianbay)}</p>
                               </div>
                               <div className="h-3 w-3 rounded-full border-2 border-solid border-cyan-700 bg-cyan-600"></div>
                             </div>
 
-                            <div className="flex flex-col items-center gap-4">
+                            <div className="flex flex-col items-center gap-4 relative -translate-y-[8px]">
                               <p className="text-lg font-medium">{segment.arrival}</p>
                               <p>{segment.giohacanh}</p>
                             </div>
@@ -298,28 +298,28 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
 
                         {/* Flight details */}
                         <div className="flex flex-col items-center gap-1 text-center text-sm font-normal text-[#1B2132]">
-                          <div className="flex items-center gap-2">
-                            <img alt="" loading="lazy" width="20" height="20" src="/icon/vn_logo.gif"/>
+                          <div className="flex items-center gap-2 ">
+                            <img   alt="" loading="lazy" width="20" height="20" src="/icon/vn_logo.gif"/>
                           
                             <div className="flex">
-                              <p className="w-max">{segment.sohieumaybay}</p>
+                              <p className="w-max relative -translate-y-[8px]">{segment.sohieumaybay}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex">
-                              <p className="cursor-pointer text-base font-medium text-blue-600 underline">Thêm thông tin</p>
+                              <p className="cursor-pointer text-base font-medium text-blue-600 underline relative -translate-y-[8px]">Thêm thông tin</p>
                             </div>
                           </div>
                         </div>
 
                         {/* Class */}
-                        <div className="ml-0 flex flex-col items-center">
+                        <div className="ml-0 flex flex-col items-center relative -translate-y-[8px]">
                           <div className="text-center font-medium text-[#535E71]">Class</div>
                           <div className="text-center text-[#1B2132]">Phổ thông ({segment.loaive})</div>
                         </div>
 
                         {/* Status */}
-                        <div className="ml-0 lg:ml-8 inline-flex flex-col items-center justify-center">
+                        <div className="ml-0 lg:ml-8 inline-flex flex-col items-center justify-center relative -translate-y-[8px]">
                           <div className="text-center font-medium text-[#535E71]">Trạng thái</div>
                           <div className="text-[#1B2132]">{segment.status}</div>
                         </div>
@@ -328,11 +328,11 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
                         <div className="mx-auto mt-4">
                           {pnrData.paymentstatus ? (
                             <div className="flex h-[30px] w-fit items-center whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-bold bg-[#DCFCD9] text-[#075835] -translate-y-[2px]">
-                              Đã thanh toán
+                              <span className="relative -translate-y-[7px]">Đã thanh toán</span>
                             </div>
                           ) : (
                             <div className="flex h-[30px] w-fit items-center whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-bold bg-[#FFDADA] text-[#B50000]">
-                              Chưa thanh toán
+                              <span className="relative -translate-y-[7px]">Chưa thanh toán</span>
                             </div>
                           )}
                         </div>
