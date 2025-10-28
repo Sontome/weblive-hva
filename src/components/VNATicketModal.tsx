@@ -137,7 +137,7 @@ export const VNATicketModal: React.FC<VNATicketModalProps> = ({ isOpen, onClose,
   const formatDuration = (duration: string) => {
     if (!duration) return '';
     const [hours, mins] = duration.split(':');
-    return `${hours} hrs ${mins} mins`;
+    return `${hours} giờ ${mins} phút`;
   };
 
   const handleClose = () => {
