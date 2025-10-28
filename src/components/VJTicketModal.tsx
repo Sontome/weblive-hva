@@ -72,6 +72,7 @@ export const VJTicketModal: React.FC<VJTicketModalProps> = ({ isOpen, onClose, i
     clone.style.position = 'absolute';
     clone.style.top = '-9999px';
     clone.style.left = '-9999px';
+    clone.style.background = '#fff'; 
     clone.style.boxShadow = 'inherit';
     document.body.appendChild(clone);
   
