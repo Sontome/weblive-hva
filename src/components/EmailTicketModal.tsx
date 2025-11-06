@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
@@ -26,6 +27,7 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
     sdt: '',
     guiChung: true,
     pnrs: '',
+    type: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -60,6 +62,7 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
       sdt: '',
       guiChung: true,
       pnrs: '',
+      type: 0,
     });
     onClose();
   };
@@ -98,7 +101,8 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
             xungHo: formData.xungHo,
             sdt: formData.sdt,
             guiChung: formData.guiChung,
-            banner : ""
+            banner : "",
+            type: formData.type
           }
         ]
       };
@@ -112,7 +116,6 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
       });
       
       const result = await response.json();
-      
       
       
       
@@ -215,13 +218,34 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="guiChung"
-              checked={formData.guiChung}
-              onCheckedChange={handleSwitchChange}
-            />
-            <Label htmlFor="guiChung">{formData.guiChung ? 'Gửi chung' : 'Gửi riêng từng Pax'}</Label>
+          <div className="flex items-center justify-between space-x-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="guiChung"
+                checked={formData.guiChung}
+                onCheckedChange={handleSwitchChange}
+              />
+              <Label htmlFor="guiChung">{formData.guiChung ? 'Gửi chung' : 'Gửi riêng từng Pax'}</Label>
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="min-w-[120px]">
+                  {formData.type === 0 ? 'Cơ bản' : formData.type === 1 ? 'IT FARE' : 'FULL'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background z-50">
+                <DropdownMenuItem onClick={() => setFormData(prev => ({ ...prev, type: 0 }))}>
+                  Cơ bản
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFormData(prev => ({ ...prev, type: 1 }))}>
+                  IT FARE
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFormData(prev => ({ ...prev, type: 2 }))}>
+                  FULL
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
