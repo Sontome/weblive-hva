@@ -99,28 +99,9 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
       .filter((pnr) => pnr.length === 6);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Basic validation
-    if (!formData.email || !formData.tenKhach || !formData.xungHo || !formData.pnrs) {
-      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
-      return;
-    }
-
+  const performSubmit = async (emailToUse: string) => {
     const pnrs = parsePNRs(formData.pnrs);
-    if (pnrs.length === 0) {
-      toast.error("Vui lòng nhập ít nhất một mã PNR hợp lệ (6 ký tự)");
-      return;
-    }
-
-    // Check if email has @gmail.com
-    if (!formData.email.toLowerCase().endsWith("@gmail.com") && !showEmailConfirmation) {
-      setShowEmailConfirmation(true);
-      setConfirmEmail(formData.email);
-      return;
-    }
-
+    
     setIsLoading(true);
 
     try {
@@ -128,7 +109,7 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
         khachHang: [
           {
             pnrs: pnrs,
-            email: formData.email,
+            email: emailToUse,
             tenKhach: formData.tenKhach,
             xungHo: formData.xungHo,
             sdt: formData.sdt,
@@ -169,6 +150,31 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!formData.email || !formData.tenKhach || !formData.xungHo || !formData.pnrs) {
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      return;
+    }
+
+    const pnrs = parsePNRs(formData.pnrs);
+    if (pnrs.length === 0) {
+      toast.error("Vui lòng nhập ít nhất một mã PNR hợp lệ (6 ký tự)");
+      return;
+    }
+
+    // Check if email has @gmail.com
+    if (!formData.email.toLowerCase().endsWith("@gmail.com") && !showEmailConfirmation) {
+      setShowEmailConfirmation(true);
+      setConfirmEmail(formData.email);
+      return;
+    }
+
+    await performSubmit(formData.email);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
@@ -207,19 +213,14 @@ export const EmailTicketModal = ({ isOpen, onClose }: EmailTicketModalProps) => 
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (confirmEmail.trim()) {
-                      setFormData((prev) => ({ ...prev, email: confirmEmail }));
-                    }
+                  onClick={async () => {
+                    const emailToSubmit = confirmEmail.trim() || formData.email;
                     setShowEmailConfirmation(false);
-                    // Trigger submit again
-                    setTimeout(() => {
-                      const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
-                      document.querySelector("form")?.dispatchEvent(submitEvent);
-                    }, 0);
+                    await performSubmit(emailToSubmit);
                   }}
+                  disabled={isLoading}
                 >
-                  Tiếp tục
+                  {isLoading ? "Đang gửi..." : "Tiếp tục"}
                 </Button>
               </div>
             </div>
