@@ -269,7 +269,7 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
           roundTripFeeVNA: 10000, 
           vnaThreshold1: 500000,
           vnaDiscount1: 3000,
-          vnaThreshold2: 700000,
+          vnaThreshold2: 800000,
           vnaDiscount2: 5000,
           vietjetThreshold1: 0,
           vietjetDiscount1: 0,
