@@ -210,8 +210,8 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
     roundTripFeeVNA: 15000, // Default for PAGE
     vnaThreshold1: 0,
     vnaDiscount1: 0, // Default 0 for PAGE
-    vnaThreshold2: 0,
-    vnaDiscount2: 0, // Default 0 for PAGE
+    vnaThreshold2: 800000,
+    vnaDiscount2: 5000, // Default 0 for PAGE
     vietjetThreshold1: 0,
     vietjetDiscount1: 0, // Default 0 for PAGE
     vietjetThreshold2: 0,
@@ -269,7 +269,7 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
           roundTripFeeVNA: 10000, 
           vnaThreshold1: 500000,
           vnaDiscount1: 3000,
-          vnaThreshold2: 800000,
+          vnaThreshold2: 700000,
           vnaDiscount2: 5000,
           vietjetThreshold1: 0,
           vietjetDiscount1: 0,
@@ -385,8 +385,8 @@ const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSearch, isLoading
         roundTripFeeVNA: 15000, 
         vnaThreshold1: 0,
         vnaDiscount1: 0,
-        vnaThreshold2: 0,
-        vnaDiscount2: 0,
+        vnaThreshold2: 800000,
+        vnaDiscount2: 5000,
         vietjetThreshold1: 0,
         vietjetDiscount1: 0,
         vietjetThreshold2: 0,
