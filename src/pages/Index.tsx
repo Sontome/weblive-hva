@@ -30,13 +30,23 @@ interface FlightSearchData {
   roundTripFeeVietjet: number;
   roundTripFeeVNA: number;
   vnaThreshold1: number;
-  vnaDiscount1: number;
+  vnaDiscountOW1: number;
+  vnaDiscountRT1: number;
   vnaThreshold2: number;
-  vnaDiscount2: number;
+  vnaDiscountOW2: number;
+  vnaDiscountRT2: number;
+  vnaThreshold3: number;
+  vnaDiscountOW3: number;
+  vnaDiscountRT3: number;
   vietjetThreshold1: number;
-  vietjetDiscount1: number;
+  vietjetDiscountOW1: number;
+  vietjetDiscountRT1: number;
   vietjetThreshold2: number;
-  vietjetDiscount2: number;
+  vietjetDiscountOW2: number;
+  vietjetDiscountRT2: number;
+  vietjetThreshold3: number;
+  vietjetDiscountOW3: number;
+  vietjetDiscountRT3: number;
 }
 
 const Index = () => {
