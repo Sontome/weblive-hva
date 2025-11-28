@@ -70,13 +70,23 @@ interface FlightResultsProps {
     roundTripFeeVietjet: number;
     roundTripFeeVNA: number;
     vnaThreshold1: number;
-    vnaDiscount1: number;
+    vnaDiscountOW1: number;
+    vnaDiscountRT1: number;
     vnaThreshold2: number;
-    vnaDiscount2: number;
+    vnaDiscountOW2: number;
+    vnaDiscountRT2: number;
+    vnaThreshold3: number;
+    vnaDiscountOW3: number;
+    vnaDiscountRT3: number;
     vietjetThreshold1: number;
-    vietjetDiscount1: number;
+    vietjetDiscountOW1: number;
+    vietjetDiscountRT1: number;
     vietjetThreshold2: number;
-    vietjetDiscount2: number;
+    vietjetDiscountOW2: number;
+    vietjetDiscountRT2: number;
+    vietjetThreshold3: number;
+    vietjetDiscountOW3: number;
+    vietjetDiscountRT3: number;
   } | null;
   apiStatus: { vj: string; vna: string };
   searchMessages?: string[];
@@ -164,17 +174,28 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     }
   
     // Áp dụng discount nếu vượt threshold
+    const isOneWay = searchData.tripType === 'OW';
     if (isVNA) {
-      if (basePrice > searchData.vnaThreshold2) {
-        finalPrice -= searchData.vnaDiscount2;
-      } else if (basePrice > searchData.vnaThreshold1) {
-        finalPrice -= searchData.vnaDiscount1;
+      if (basePrice > (searchData.vnaThreshold3 || 0)) {
+        const discount = isOneWay ? (searchData.vnaDiscountOW3 || 0) : (searchData.vnaDiscountRT3 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vnaThreshold2 || 0)) {
+        const discount = isOneWay ? (searchData.vnaDiscountOW2 || 0) : (searchData.vnaDiscountRT2 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vnaThreshold1 || 0)) {
+        const discount = isOneWay ? (searchData.vnaDiscountOW1 || 0) : (searchData.vnaDiscountRT1 || 0);
+        finalPrice -= discount;
       }
     } else {
-      if (basePrice > searchData.vietjetThreshold2) {
-        finalPrice -= searchData.vietjetDiscount2;
-      } else if (basePrice > searchData.vietjetThreshold1) {
-        finalPrice -= searchData.vietjetDiscount1;
+      if (basePrice > (searchData.vietjetThreshold3 || 0)) {
+        const discount = isOneWay ? (searchData.vietjetDiscountOW3 || 0) : (searchData.vietjetDiscountRT3 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vietjetThreshold2 || 0)) {
+        const discount = isOneWay ? (searchData.vietjetDiscountOW2 || 0) : (searchData.vietjetDiscountRT2 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vietjetThreshold1 || 0)) {
+        const discount = isOneWay ? (searchData.vietjetDiscountOW1 || 0) : (searchData.vietjetDiscountRT1 || 0);
+        finalPrice -= discount;
       }
     }
   
