@@ -7,11 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+
+interface InfantInfo {
+  Họ: string;
+  Tên: string;
+  Giới_tính: 'nam' | 'nữ';
+}
+
 interface PassengerInfo {
   Họ: string;
   Tên: string;
   Giới_tính: 'nam' | 'nữ';
   type: 'người_lớn' | 'trẻ_em';
+  infant?: InfantInfo;
 }
 
 interface VNABookingModalProps {
@@ -50,6 +58,13 @@ export const VNABookingModal = ({
   const [successData, setSuccessData] = useState<{ pnr: string } | null>(null);
 
   // Remove Vietnamese diacritics
+  // Convert date from "24/04/2026" to "24APR"
+  const formatDateForAPI = (dateStr: string) => {
+    const [day, month, year] = dateStr.split('/');
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return `${day}${months[parseInt(month) - 1]}`;
+  };
+
   const removeVietnameseDiacritics = (str: string) => {
     const vietnameseMap: { [key: string]: string } = {
       'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
@@ -82,23 +97,34 @@ export const VNABookingModal = ({
     return str.split('').map(char => vietnameseMap[char] || char).join('');
   };
 
-  const formatNameForAPI = (ho: string, ten: string, gioiTinh: 'nam' | 'nữ', type: 'người_lớn' | 'trẻ_em') => {
-    const lastName = removeVietnameseDiacritics(ho.trim()).toUpperCase();
-    const firstName = removeVietnameseDiacritics(ten.trim()).toUpperCase().replace(/\s+/g, ' ');
-    const gender = type === 'trẻ_em' 
-      ? (gioiTinh === 'nam' ? 'MSTR' : 'MISS')
-      : (gioiTinh === 'nam' ? 'MR' : 'MS');
-    const ageType = type === 'người_lớn' ? 'ADT' : 'CHD';
-    return `${lastName}/${firstName} ${gender}(${ageType})`;
+  const formatNameForAPI = (passenger: PassengerInfo) => {
+    const lastName = removeVietnameseDiacritics(passenger.Họ.trim()).toUpperCase();
+    const firstName = removeVietnameseDiacritics(passenger.Tên.trim()).toUpperCase().replace(/\s+/g, ' ');
+    const gender = passenger.type === 'trẻ_em' 
+      ? (passenger.Giới_tính === 'nam' ? 'MSTR' : 'MISS')
+      : (passenger.Giới_tính === 'nam' ? 'MR' : 'MS');
+    const ageType = passenger.type === 'người_lớn' ? 'ADT' : 'CHD';
+    
+    let formattedName = `${lastName}/${firstName} ${gender}(${ageType})`;
+    
+    // Add infant if present
+    if (passenger.infant && passenger.infant.Họ && passenger.infant.Tên) {
+      const infantLastName = removeVietnameseDiacritics(passenger.infant.Họ.trim()).toUpperCase();
+      const infantFirstName = removeVietnameseDiacritics(passenger.infant.Tên.trim()).toUpperCase().replace(/\s+/g, ' ');
+      const infantGender = passenger.infant.Giới_tính === 'nam' ? 'MSTR' : 'MISS';
+      formattedName += `(INF${infantLastName}/${infantFirstName} ${infantGender})`;
+    }
+    
+    return formattedName;
   };
 
-  const handlePassengerChange = (index: number, field: keyof PassengerInfo, value: string | 'nam' | 'nữ' | 'người_lớn' | 'trẻ_em') => {
+  const handlePassengerChange = (index: number, field: 'Họ' | 'Tên' | 'Giới_tính' | 'type', value: string | 'nam' | 'nữ' | 'người_lớn' | 'trẻ_em') => {
     const newPassengers = [...passengers];
     if (field === 'Giới_tính') {
       newPassengers[index][field] = value as 'nam' | 'nữ';
     } else if (field === 'type') {
       newPassengers[index][field] = value as 'người_lớn' | 'trẻ_em';
-    } else {
+    } else if (field === 'Họ' || field === 'Tên') {
       newPassengers[index][field] = value as string;
     }
     setPassengers(newPassengers);
@@ -143,28 +169,34 @@ export const VNABookingModal = ({
         if (!passenger.Họ.trim() || !passenger.Tên.trim()) {
           throw new Error("Vui lòng điền đầy đủ thông tin hành khách");
         }
+        // Validate infant if present
+        if (passenger.infant && (passenger.infant.Họ || passenger.infant.Tên)) {
+          if (!passenger.infant.Họ.trim() || !passenger.infant.Tên.trim()) {
+            throw new Error("Vui lòng điền đầy đủ thông tin trẻ sơ sinh");
+          }
+        }
       }
 
       // Build URL with query params
       const params = new URLSearchParams();
       params.append('dep', flightInfo.dep);
       params.append('arr', flightInfo.arr);
-      params.append('depdate', flightInfo.depdate);
+      params.append('depdate', formatDateForAPI(flightInfo.depdate));
       params.append('deptime', flightInfo.deptime.replace(':', ''));
       
       // Only add return date/time if round trip
       if (flightInfo.tripType === 'RT' && flightInfo.arrdate && flightInfo.arrtime) {
-        params.append('arrdate', flightInfo.arrdate);
+        params.append('arrdate', formatDateForAPI(flightInfo.arrdate));
         params.append('arrtime', flightInfo.arrtime.replace(':', ''));
       }
       
       params.append('doituong', doiTuong);
 
-      // Add passengers
-      passengers.forEach(passenger => {
-        const formattedName = formatNameForAPI(passenger.Họ, passenger.Tên, passenger.Giới_tính, passenger.type);
+      // Add passengers in reverse order (last to first)
+      for (let i = passengers.length - 1; i >= 0; i--) {
+        const formattedName = formatNameForAPI(passengers[i]);
         params.append('hanhkhach', formattedName);
-      });
+      }
 
       setIsLoading(true);
       const response = await fetch(`https://thuhongtour.com/giuveVNAlive?${params.toString()}`, {
@@ -280,6 +312,82 @@ export const VNABookingModal = ({
                     </Select>
                   </div>
                 </div>
+
+                {/* Infant section - only for adults */}
+                {passenger.type === 'người_lớn' && (
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Trẻ sơ sinh (INF) - Kèm theo người lớn</Label>
+                      {passenger.infant && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newPassengers = [...passengers];
+                            delete newPassengers[index].infant;
+                            setPassengers(newPassengers);
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Họ</Label>
+                        <Input
+                          value={passenger.infant?.Họ || ''}
+                          onChange={(e) => {
+                            const newPassengers = [...passengers];
+                            if (!newPassengers[index].infant) {
+                              newPassengers[index].infant = { Họ: '', Tên: '', Giới_tính: 'nam' };
+                            }
+                            newPassengers[index].infant!.Họ = e.target.value;
+                            setPassengers(newPassengers);
+                          }}
+                          placeholder="NGUYEN"
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tên</Label>
+                        <Input
+                          value={passenger.infant?.Tên || ''}
+                          onChange={(e) => {
+                            const newPassengers = [...passengers];
+                            if (!newPassengers[index].infant) {
+                              newPassengers[index].infant = { Họ: '', Tên: '', Giới_tính: 'nam' };
+                            }
+                            newPassengers[index].infant!.Tên = e.target.value;
+                            setPassengers(newPassengers);
+                          }}
+                          placeholder="TIEU VU"
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Giới tính</Label>
+                        <Select
+                          value={passenger.infant?.Giới_tính || 'nam'}
+                          onValueChange={(v: 'nam' | 'nữ') => {
+                            const newPassengers = [...passengers];
+                            if (!newPassengers[index].infant) {
+                              newPassengers[index].infant = { Họ: '', Tên: '', Giới_tính: 'nam' };
+                            }
+                            newPassengers[index].infant!.Giới_tính = v;
+                            setPassengers(newPassengers);
+                          }}
+                        >
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nam">MSTR</SelectItem>
+                            <SelectItem value="nữ">MISS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
