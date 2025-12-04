@@ -862,9 +862,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               flightInfo={{
                 dep: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || '',
                 arr: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đến || '',
-                depdate: formatDateForVNA((selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || ''),
+                depdate: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || '',
                 deptime: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.giờ_cất_cánh || '',
-                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg) ? formatDateForVNA((selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || '') : undefined,
+                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || undefined,
                 arrtime: (selectedFlight['chiều_về'] as VNAFlightLeg)?.giờ_cất_cánh,
                 tripType: searchData?.tripType || 'OW'
               }}
@@ -925,9 +925,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               flightInfo={{
                 dep: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || '',
                 arr: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đến || '',
-                depdate: formatDateForVNA((selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || ''),
+                depdate: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || '',
                 deptime: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.giờ_cất_cánh || '',
-                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg) ? formatDateForVNA((selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || '') : undefined,
+                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || undefined,
                 arrtime: (selectedFlight['chiều_về'] as VNAFlightLeg)?.giờ_cất_cánh,
                 tripType: searchData?.tripType || 'OW'
               }}
