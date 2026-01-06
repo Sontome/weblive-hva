@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FlightSearchForm from '../components/FlightSearchForm';
 import FlightResults from '../components/FlightResults';
 import AirlineFilter from '../components/AirlineFilter';
 import FlightTypeFilter from '../components/FlightTypeFilter';
+import LowFareChart from '../components/LowFareChart';
 import { CustomerTypeModal } from '../components/CustomerTypeModal';
-import { LoginForm } from '../components/LoginForm';
 import { EmailTicketModal } from '../components/EmailTicketModal';
 import { PNRCheckModal } from '../components/PNRCheckModal';
 import { CheckinModal } from '../components/CheckinModal';
@@ -14,8 +15,11 @@ import { VJTicketModal } from '../components/VJTicketModal';
 import { VNATicketModal } from '../components/VNATicketModal';
 import { Button } from '@/components/ui/button';
 import { searchAllFlights } from '../services/flightService';
+import { searchLowFare, LowFareDay } from '../services/lowfareService';
 import { shouldSkipVietjet } from '../utils/flightValidation';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { usePriceConfigs } from '@/hooks/usePriceConfigs';
 
 interface FlightSearchData {
   departure: string;
@@ -50,6 +54,8 @@ interface FlightSearchData {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { configs: priceConfigs, isLoading: configsLoading } = usePriceConfigs();
   const [searchResults, setSearchResults] = useState([]);
   const [allResults, setAllResults] = useState([]); // Store all results for filtering
   const [vjetResults, setVjetResults] = useState([]);
@@ -65,6 +71,7 @@ const Index = () => {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [customerType, setCustomerType] = useState<'page' | 'live' | 'custom' | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPNRModal, setShowPNRModal] = useState(false);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
@@ -73,6 +80,36 @@ const Index = () => {
   const [vjTicketInitialPNR, setVjTicketInitialPNR] = useState<string | undefined>(undefined);
   const [showVNATicketModal, setShowVNATicketModal] = useState(false);
   const [vnaTicketInitialPNR, setVnaTicketInitialPNR] = useState<string | undefined>(undefined);
+  
+  // Low fare chart state
+  const [lowFareDeparture, setLowFareDeparture] = useState<LowFareDay[]>([]);
+  const [lowFareReturn, setLowFareReturn] = useState<LowFareDay[]>([]);
+  const [isLoadingLowFare, setIsLoadingLowFare] = useState(false);
+  const [lastSearchData, setLastSearchData] = useState<FlightSearchData | null>(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+      setIsLoggedIn(true);
+      setIsCheckingAuth(false);
+      setShowCustomerModal(true);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate('/auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const playTingSound = () => {
     try {
@@ -109,6 +146,47 @@ const Index = () => {
     setAllResults(combinedResults);
   };
 
+  // Fetch low fare data from VietJet
+  const fetchLowFareData = async (data: FlightSearchData) => {
+    setIsLoadingLowFare(true);
+    setLowFareDeparture([]);
+    setLowFareReturn([]);
+    
+    try {
+      const result = await searchLowFare(
+        data.departure,
+        data.arrival,
+        data.tripType,
+        data.departureDate,
+        data.returnDate
+      );
+      
+      if (result.status_code === '200' && result.body) {
+        setLowFareDeparture(result.body.chiều_đi || []);
+        setLowFareReturn(result.body.chiều_về || []);
+      }
+    } catch (error) {
+      console.error('Error fetching low fare data:', error);
+    } finally {
+      setIsLoadingLowFare(false);
+    }
+  };
+
+  // Handle search with selected dates from low fare chart
+  const handleSearchWithDates = (departureDate: string, returnDate: string) => {
+    if (!lastSearchData) return;
+    
+    const newSearchData: FlightSearchData = {
+      ...lastSearchData,
+      departureDate,
+      returnDate,
+      tripType: returnDate ? 'RT' : 'OW',
+    };
+    
+    handleSearch(newSearchData);
+  };
+
+
   const handleSearch = async (searchData: FlightSearchData) => {
     console.log('Searching with data:', searchData);
     setIsLoading(true);
@@ -117,12 +195,16 @@ const Index = () => {
     setVjetResults([]);
     setVnaResults([]);
     setSearchData(searchData);
+    setLastSearchData(searchData);
     setApiStatus({ vj: 'pending', vna: 'pending' });
     setSearchMessages([]);
     setHasSearched(true);
     
     const skipVietjet = shouldSkipVietjet(searchData.departure, searchData.arrival);
     setVietjetDomesticError(skipVietjet);
+    
+    // Fetch low fare data (don't wait for it to complete)
+    fetchLowFareData(searchData);
 
     let completedAPIs = 0;
     const totalAPIs = 2;
@@ -245,17 +327,13 @@ const Index = () => {
     setSelectedFlightType(flightType);
   };
 
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-    setShowCustomerModal(true);
-  };
-
   const handleSelectCustomerType = (type: 'page' | 'live' | 'custom') => {
     setCustomerType(type);
     setShowCustomerModal(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsLoggedIn(false);
     setCustomerType(null);
     setShowCustomerModal(false);
@@ -265,6 +343,7 @@ const Index = () => {
     setVnaResults([]);
     setSearchData(null);
     setHasSearched(false);
+    navigate('/auth');
   };
 
   // Combine results whenever results change
@@ -274,9 +353,13 @@ const Index = () => {
     }
   }, [vjetResults, vnaResults]);
 
-  // Show login form if not logged in
-  if (!isLoggedIn) {
-    return <LoginForm onLoginSuccess={handleLoginSuccess} />;
+  // Show loading while checking auth
+  if (isCheckingAuth || configsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
+        <div className="text-lg text-gray-600">Đang tải...</div>
+      </div>
+    );
   }
 
   return (
@@ -320,74 +403,63 @@ const Index = () => {
       />
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-end items-start">
-            
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setShowVJTicketModal(true)}
-                variant="action-ticket"
-                size="default"
-                className="px-5"
-              >
-                🎫 Mặt vé chờ VJ
-              </Button>
-              <Button
-                onClick={() => setShowVNATicketModal(true)}
-                variant="action-ticket"
-                size="default"
-                className="px-5"
-              >
-                🎫 Mặt vé chờ VNA
-              </Button>
-              <Button
-                onClick={() => setShowRepriceModal(true)}
-                variant="action-reprice"
-                size="default"
-                className="px-5"
-              >
-                💰 Reprice
-              </Button>
-              <Button
-                onClick={() => setShowCheckinModal(true)}
-                variant="action-checkin"
-                size="default"
-                className="px-5"
-              >
-                ✅ Check-in
-              </Button>
-              <Button
-                onClick={() => setShowPNRModal(true)}
-                variant="action-image"
-                size="default"
-                className="px-5"
-              >
-                🎫 Lấy ảnh mặt vé
-              </Button>
-              <Button
-                onClick={() => setShowEmailModal(true)}
-                variant="action-email"
-                size="default"
-                className="px-5"
-              >
-                📧 Gửi Email Mặt Vé
-              </Button>
-              <Button
-                onClick={handleLogout}
-                variant="action-logout"
-                size="default"
-                className="px-5"
-              >
-                🚪 THOÁT
-              </Button>
-            </div>
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-6">
+          <div className="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3">
+            <Button
+              onClick={() => setShowVJTicketModal(true)}
+              variant="action-ticket"
+              size="sm"
+              className="px-2 sm:px-5 text-xs sm:text-sm"
+            >
+              🎫 Vé VJ
+            </Button>
+            <Button
+              onClick={() => setShowVNATicketModal(true)}
+              variant="action-ticket"
+              size="sm"
+              className="px-2 sm:px-5 text-xs sm:text-sm"
+            >
+              🎫 Vé VNA
+            </Button>
+            <Button
+              onClick={() => setShowRepriceModal(true)}
+              variant="action-reprice"
+              size="sm"
+              className="px-2 sm:px-5 text-xs sm:text-sm"
+            >
+              💰 Reprice
+            </Button>
+            <Button
+              onClick={() => setShowCheckinModal(true)}
+              variant="action-checkin"
+              size="sm"
+              className="px-2 sm:px-5 text-xs sm:text-sm"
+            >
+              ✅ Check-in
+            </Button>
+            <Button
+              onClick={() => setShowEmailModal(true)}
+              variant="action-email"
+              size="sm"
+              className="px-2 sm:px-5 text-xs sm:text-sm"
+            >
+              📧 Email
+            </Button>
+            <Button
+              onClick={() => setShowPNRModal(true)}
+              variant="action-image"
+              size="sm"
+              className="px-2 sm:px-5 text-xs sm:text-sm"
+            >
+              🎫 Ảnh vé
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <FlightSearchForm onSearch={handleSearch} isLoading={isLoading} customerType={customerType} />
+        <FlightSearchForm onSearch={handleSearch} isLoading={isLoading} customerType={customerType} priceConfigs={priceConfigs} />
         
         <div className="flex flex-wrap gap-4 mb-6">
           <AirlineFilter 
@@ -400,7 +472,20 @@ const Index = () => {
           />
         </div>
         
-        <FlightResults 
+        {/* Low Fare Chart - show after first search */}
+        {hasSearched && (lowFareDeparture.length > 0 || lowFareReturn.length > 0) && (
+          <LowFareChart
+            departureData={lowFareDeparture}
+            returnData={lowFareReturn}
+            tripType={searchData?.tripType || 'OW'}
+            onSearchWithDates={handleSearchWithDates}
+            isLoading={isLoading}
+            initialDepartureDate={searchData?.departureDate}
+            initialReturnDate={searchData?.returnDate}
+          />
+        )}
+        
+        <FlightResults
           results={searchResults} 
           vjetResults={vjetResults}
           vnaResults={vnaResults}
