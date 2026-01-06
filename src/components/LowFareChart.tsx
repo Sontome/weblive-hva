@@ -42,17 +42,27 @@ const toApiFormat = (dateStr: string): string => {
 };
 
 // Get color based on price relative to min/max
-const getPriceColor = (price: number, minPrice: number, maxPrice: number): string => {
-  if (maxPrice === minPrice) return 'hsl(120, 70%, 45%)'; // All same price = green
-  
-  const ratio = (price - minPrice) / (maxPrice - minPrice);
-  // Gradient from green (0) to red (1)
-  // Green: hsl(120, 70%, 45%)
-  // Yellow: hsl(60, 70%, 45%)
-  // Orange: hsl(30, 70%, 45%)
-  // Red: hsl(0, 70%, 45%)
-  const hue = 120 - (ratio * 120); // 120 (green) to 0 (red)
-  return `hsl(${hue}, 70%, 45%)`;
+const getPriceColor = (
+  price: number,
+  minPrice: number,
+  maxPrice: number
+): string => {
+  if (maxPrice === minPrice) return 'hsl(120, 90%, 50%)';
+
+  let ratio = (price - minPrice) / (maxPrice - minPrice);
+
+  // 👇 Giãn mạnh vùng rẻ
+  if (ratio < 0.3) {
+    ratio = ratio / 0.3;          // 0 → 1 trong vùng rẻ
+    ratio = Math.pow(ratio, 0.35);
+  } else {
+    ratio = 1; // mấy giá cao cho đỏ hết, đỡ quan tâm
+  }
+
+  const hue = 120 - ratio * 120;
+  const lightness = 70 - ratio * 35;
+
+  return `hsl(${hue}, 95%, ${lightness}%)`;
 };
 
 // Get bar height based on price relative to min/max
