@@ -3,6 +3,7 @@ import { Plane, Clock, Users, Copy, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { BookingModal } from './BookingModal';
 import { VNABookingModal } from './VNABookingModal';
+import { OtherAirlinesModal } from './OtherAirlinesModal';
 import { Button } from './ui/button';
 
 interface FlightLeg {
@@ -69,6 +70,8 @@ interface FlightResultsProps {
     oneWayFee: number;
     roundTripFeeVietjet: number;
     roundTripFeeVNA: number;
+    roundTripFeeOther: number;
+    // VNA thresholds and discounts (5 tiers)
     vnaThreshold1: number;
     vnaDiscountOW1: number;
     vnaDiscountRT1: number;
@@ -78,6 +81,13 @@ interface FlightResultsProps {
     vnaThreshold3: number;
     vnaDiscountOW3: number;
     vnaDiscountRT3: number;
+    vnaThreshold4: number;
+    vnaDiscountOW4: number;
+    vnaDiscountRT4: number;
+    vnaThreshold5: number;
+    vnaDiscountOW5: number;
+    vnaDiscountRT5: number;
+    // Vietjet thresholds and discounts (5 tiers)
     vietjetThreshold1: number;
     vietjetDiscountOW1: number;
     vietjetDiscountRT1: number;
@@ -87,6 +97,28 @@ interface FlightResultsProps {
     vietjetThreshold3: number;
     vietjetDiscountOW3: number;
     vietjetDiscountRT3: number;
+    vietjetThreshold4: number;
+    vietjetDiscountOW4: number;
+    vietjetDiscountRT4: number;
+    vietjetThreshold5: number;
+    vietjetDiscountOW5: number;
+    vietjetDiscountRT5: number;
+    // Other airlines thresholds and discounts (5 tiers)
+    otherThreshold1: number;
+    otherDiscountOW1: number;
+    otherDiscountRT1: number;
+    otherThreshold2: number;
+    otherDiscountOW2: number;
+    otherDiscountRT2: number;
+    otherThreshold3: number;
+    otherDiscountOW3: number;
+    otherDiscountRT3: number;
+    otherThreshold4: number;
+    otherDiscountOW4: number;
+    otherDiscountRT4: number;
+    otherThreshold5: number;
+    otherDiscountOW5: number;
+    otherDiscountRT5: number;
   } | null;
   apiStatus: { vj: string; vna: string };
   searchMessages?: string[];
@@ -95,6 +127,18 @@ interface FlightResultsProps {
   onVJBookingSuccess?: (pnr: string) => void;
   onVNABookingSuccess?: (pnr: string) => void;
 }
+
+// Airline names for display
+const AIRLINE_NAMES: Record<string, string> = {
+  'OZ': 'Asiana',
+  'TW': 'Tway',
+  'LJ': 'Jin Air',
+  'BX': 'Air Busan',
+  'KE': 'Korean Air',
+  '7C': 'Jeju',
+  'YP': 'Premia',
+  'RS': 'Air Seoul',
+};
 
 const FlightResults: React.FC<FlightResultsProps> = ({ 
   results, 
@@ -116,6 +160,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [vnaBookingModalOpen, setVnaBookingModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<FlightResult | null>(null);
+  const [otherAirlinesModalOpen, setOtherAirlinesModalOpen] = useState(false);
 
   const toggleDetails = (index: number) => {
     setExpandedDetails(prev => ({
@@ -154,47 +199,81 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   
     let finalPrice = basePrice;
   
+    // Xác định hãng bay
+    let isVNA = false;
+    let isVJ = false;
+    let isOther = false;
+    if (flightResult && flightResult['chiều_đi']) {
+      const hang = flightResult['chiều_đi'].hãng;
+      isVNA = hang === 'VNA';
+      isVJ = hang === 'VJ';
+      isOther = !isVNA && !isVJ;
+    }
+
     if (searchData.tripType === 'OW') {
       finalPrice += searchData.oneWayFee;
     } else {
-      if (flightResult) {
-        const outbound = flightResult['chiều_đi'];
-        const isVNA = outbound && outbound.hãng === 'VNA';
-        const roundTripFee = isVNA ? searchData.roundTripFeeVNA : searchData.roundTripFeeVietjet;
-        finalPrice += roundTripFee;
+      if (isVNA) {
+        finalPrice += searchData.roundTripFeeVNA;
+      } else if (isVJ) {
+        finalPrice += searchData.roundTripFeeVietjet;
       } else {
-        finalPrice += searchData.roundTripFeeVietjet; // fallback
+        finalPrice += searchData.roundTripFeeOther || 0;
       }
     }
   
-    // Xác định hãng bay
-    let isVNA = false;
-    if (flightResult && flightResult['chiều_đi']) {
-      isVNA = flightResult['chiều_đi'].hãng === 'VNA';
-    }
-  
-    // Áp dụng discount nếu vượt threshold
+    // Áp dụng discount nếu vượt threshold (5 tiers)
     const isOneWay = searchData.tripType === 'OW';
     if (isVNA) {
-      if (basePrice > (searchData.vnaThreshold3 || 0)) {
+      if (basePrice > (searchData.vnaThreshold5 || 0) && (searchData.vnaThreshold5 || 0) > 0) {
+        const discount = isOneWay ? (searchData.vnaDiscountOW5 || 0) : (searchData.vnaDiscountRT5 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vnaThreshold4 || 0) && (searchData.vnaThreshold4 || 0) > 0) {
+        const discount = isOneWay ? (searchData.vnaDiscountOW4 || 0) : (searchData.vnaDiscountRT4 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vnaThreshold3 || 0) && (searchData.vnaThreshold3 || 0) > 0) {
         const discount = isOneWay ? (searchData.vnaDiscountOW3 || 0) : (searchData.vnaDiscountRT3 || 0);
         finalPrice -= discount;
-      } else if (basePrice > (searchData.vnaThreshold2 || 0)) {
+      } else if (basePrice > (searchData.vnaThreshold2 || 0) && (searchData.vnaThreshold2 || 0) > 0) {
         const discount = isOneWay ? (searchData.vnaDiscountOW2 || 0) : (searchData.vnaDiscountRT2 || 0);
         finalPrice -= discount;
-      } else if (basePrice > (searchData.vnaThreshold1 || 0)) {
+      } else if (basePrice > (searchData.vnaThreshold1 || 0) && (searchData.vnaThreshold1 || 0) > 0) {
         const discount = isOneWay ? (searchData.vnaDiscountOW1 || 0) : (searchData.vnaDiscountRT1 || 0);
         finalPrice -= discount;
       }
-    } else {
-      if (basePrice > (searchData.vietjetThreshold3 || 0)) {
+    } else if (isVJ) {
+      if (basePrice > (searchData.vietjetThreshold5 || 0) && (searchData.vietjetThreshold5 || 0) > 0) {
+        const discount = isOneWay ? (searchData.vietjetDiscountOW5 || 0) : (searchData.vietjetDiscountRT5 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vietjetThreshold4 || 0) && (searchData.vietjetThreshold4 || 0) > 0) {
+        const discount = isOneWay ? (searchData.vietjetDiscountOW4 || 0) : (searchData.vietjetDiscountRT4 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.vietjetThreshold3 || 0) && (searchData.vietjetThreshold3 || 0) > 0) {
         const discount = isOneWay ? (searchData.vietjetDiscountOW3 || 0) : (searchData.vietjetDiscountRT3 || 0);
         finalPrice -= discount;
-      } else if (basePrice > (searchData.vietjetThreshold2 || 0)) {
+      } else if (basePrice > (searchData.vietjetThreshold2 || 0) && (searchData.vietjetThreshold2 || 0) > 0) {
         const discount = isOneWay ? (searchData.vietjetDiscountOW2 || 0) : (searchData.vietjetDiscountRT2 || 0);
         finalPrice -= discount;
-      } else if (basePrice > (searchData.vietjetThreshold1 || 0)) {
+      } else if (basePrice > (searchData.vietjetThreshold1 || 0) && (searchData.vietjetThreshold1 || 0) > 0) {
         const discount = isOneWay ? (searchData.vietjetDiscountOW1 || 0) : (searchData.vietjetDiscountRT1 || 0);
+        finalPrice -= discount;
+      }
+    } else {
+      // Other airlines
+      if (basePrice > (searchData.otherThreshold5 || 0) && (searchData.otherThreshold5 || 0) > 0) {
+        const discount = isOneWay ? (searchData.otherDiscountOW5 || 0) : (searchData.otherDiscountRT5 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.otherThreshold4 || 0) && (searchData.otherThreshold4 || 0) > 0) {
+        const discount = isOneWay ? (searchData.otherDiscountOW4 || 0) : (searchData.otherDiscountRT4 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.otherThreshold3 || 0) && (searchData.otherThreshold3 || 0) > 0) {
+        const discount = isOneWay ? (searchData.otherDiscountOW3 || 0) : (searchData.otherDiscountRT3 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.otherThreshold2 || 0) && (searchData.otherThreshold2 || 0) > 0) {
+        const discount = isOneWay ? (searchData.otherDiscountOW2 || 0) : (searchData.otherDiscountRT2 || 0);
+        finalPrice -= discount;
+      } else if (basePrice > (searchData.otherThreshold1 || 0) && (searchData.otherThreshold1 || 0) > 0) {
+        const discount = isOneWay ? (searchData.otherDiscountOW1 || 0) : (searchData.otherDiscountRT1 || 0);
         finalPrice -= discount;
       }
     }
@@ -217,8 +296,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return timeStr;
   };
 
-  const getTicketTypeDisplay = (loaiVe: string, isVNA: boolean) => {
-    if (isVNA) {
+  const getTicketTypeDisplay = (loaiVe: string, isVJ: boolean) => {
+    if (!isVJ) {
       return loaiVe; // Return actual ticket class for VNA
     }
     // For VietJet, keep existing logic
@@ -240,11 +319,11 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     
     if (!outbound) return '';
     
-    const isVNA = outbound.hãng === 'VNA';
-    const outboundClass = getTicketTypeDisplay(outbound.loại_vé, isVNA);
+    const isVJ = outbound.hãng === 'VJ';
+    const outboundClass = getTicketTypeDisplay(outbound.loại_vé, isVJ);
     
     if (inbound) {
-      const inboundClass = getTicketTypeDisplay(inbound.loại_vé, isVNA);
+      const inboundClass = getTicketTypeDisplay(inbound.loại_vé, isVJ);
       return `Khứ hồi: ${outboundClass}-${inboundClass}`;
     } else {
       return `Một chiều: ${outboundClass}`;
@@ -331,49 +410,75 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     if (!outbound) return '';
 
     const isVNA = outbound.hãng === 'VNA';
+    const isVJ = outbound.hãng === 'VJ';
+    const hang = outbound.hãng
     const finalPrice = calculateFinalPrice(result['thông_tin_chung'].giá_vé, result);
     const baggageType = result['thông_tin_chung'].hành_lý_vna;
     
-    let template = '';
-    
+    const lines: string[] = [];
+    const airlineConfig: Record<
+      string,
+      {
+        name: string;
+        carryOn: string;
+        checked?: string;
+      }
+    > = {
+      '7C': { name: 'Jeju Air', carryOn: '10kg', checked: '15kg' },
+      'YP': { name: 'Premia Air', carryOn: '10kg', checked: '23kg' },
+      'LJ': { name: 'Jin Air', carryOn: '10kg', checked: '15kg' },
+      'TW': { name: 'Tway Air', carryOn: '10kg' }, // ký gửi ko cố định
+      'KE': { name: 'Korean Air', carryOn: '10kg', checked: '23kg' },
+      'OZ': { name: 'Asiana Airlines', carryOn: '10kg', checked: '23kg' },
+      'RS': { name: 'Air Seoul', carryOn: '10kg', checked: '15kg' },
+      'BX': { name: 'Air Busan', carryOn: '10kg', checked: '15kg' },
+    };
     // For connecting flights, show all segments with proper times
     if (outbound.số_điểm_dừng === '1') {
-      // Outbound segments - show both departure and arrival times correctly
-      template += `${outbound.nơi_đi}-${outbound.điểm_dừng_1} ${outbound.giờ_cất_cánh} ngày ${formatDate(outbound.ngày_cất_cánh)}\n`;
-      // For second segment, we need the actual departure time from transit point
-      template += `${outbound.điểm_dừng_1}-${outbound.nơi_đến} ${outbound.giờ_hạ_cánh} ngày ${formatDate(outbound.ngày_hạ_cánh)}\n`;
+      lines.push(`${outbound.nơi_đi}-${outbound.điểm_dừng_1} ${outbound.giờ_cất_cánh} ngày ${formatDate(outbound.ngày_cất_cánh)}`);
+      lines.push(`${outbound.điểm_dừng_1}-${outbound.nơi_đến} ${outbound.giờ_hạ_cánh} ngày ${formatDate(outbound.ngày_hạ_cánh)}`);
       
-      // Return segments (if exists)
       if (inbound && inbound.số_điểm_dừng === '1') {
-        template += `${inbound.nơi_đi}-${inbound.điểm_dừng_1} ${inbound.giờ_cất_cánh} ngày ${formatDate(inbound.ngày_cất_cánh)}\n`;
-        template += `${inbound.điểm_dừng_1}-${inbound.nơi_đến} ${inbound.giờ_hạ_cánh} ngày ${formatDate(inbound.ngày_hạ_cánh)}\n`;
+        lines.push(`${inbound.nơi_đi}-${inbound.điểm_dừng_1} ${inbound.giờ_cất_cánh} ngày ${formatDate(inbound.ngày_cất_cánh)}`);
+        lines.push(`${inbound.điểm_dừng_1}-${inbound.nơi_đến} ${inbound.giờ_hạ_cánh} ngày ${formatDate(inbound.ngày_hạ_cánh)}`);
       }
     } else {
-      // Direct flights - keep existing format
-      template += `${outbound.nơi_đi}-${outbound.nơi_đến} ${outbound.giờ_cất_cánh} ngày ${formatDate(outbound.ngày_cất_cánh)}\n`;
+      lines.push(`${outbound.nơi_đi}-${outbound.nơi_đến} ${outbound.giờ_cất_cánh} ngày ${formatDate(outbound.ngày_cất_cánh)}`);
       
       if (inbound) {
-        template += `${inbound.nơi_đi}-${inbound.nơi_đến} ${inbound.giờ_cất_cánh} ngày ${formatDate(inbound.ngày_cất_cánh)}\n`;
+        lines.push(`${inbound.nơi_đi}-${inbound.nơi_đến} ${inbound.giờ_cất_cánh} ngày ${formatDate(inbound.ngày_cất_cánh)}`);
       }
     }
     
-    // Airline specific baggage info - only for VFR and ADT
+    // Airline specific baggage info
     if (isVNA && (baggageType === 'VFR' || baggageType === 'ADT')) {
       if (baggageType === 'ADT') {
-        template += `VNairlines 10kg xách tay, 23kg ký gửi, giá vé = ${formatPriceForCopy(finalPrice)}w`;
+        lines.push(`VNairlines 10kg xách tay, 23kg ký gửi, giá vé = ${formatPriceForCopy(finalPrice)}w`);
       } else {
-        // VFR
-        template += `VNairlines 10kg xách tay, 46kg ký gửi, giá vé = ${formatPriceForCopy(finalPrice)}w`;
+        lines.push(`VNairlines 10kg xách tay, 46kg ký gửi, giá vé = ${formatPriceForCopy(finalPrice)}w`);
       }
-    } else if (!isVNA) {
-      // Template for Vietjet
-      template += `Vietjet 7kg xách tay, 20kg ký gửi, giá vé = ${formatPriceForCopy(finalPrice)}w`;
+    } else if (isVJ) {
+      lines.push(`Vietjet 7kg xách tay, 20kg ký gửi, giá vé = ${formatPriceForCopy(finalPrice)}w`);
     } else {
-      // For other VNA ticket types, just show basic info
-      template += `VNairlines giá vé = ${formatPriceForCopy(finalPrice)}w`;
+      const airline = airlineConfig[hang];
+    
+      if (airline) {
+        const checkedText = airline.checked
+          ? `, ${airline.checked} ký gửi`
+          : ', ký gửi tuỳ gói';
+    
+        lines.push(
+          `${airline.name} ${airline.carryOn} xách tay${checkedText}, giá vé = ${formatPriceForCopy(finalPrice)}w`
+        );
+      } else {
+        // hãng lạ chưa khai báo
+        lines.push(
+          `${hang} 10kg xách tay, giá vé = ${formatPriceForCopy(finalPrice)}w`
+        );
+      }
     }
     
-    return template;
+    return lines.join('\n');
   };
 
   const copyToClipboard = async (text: string) => {
@@ -412,6 +517,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     if (!outbound) return null;
 
     const isVNA = outbound.hãng === 'VNA';
+    const isVJ = outbound.hãng === 'VJ';
+    const isOtherAirline = outbound.hãng !== 'VNA' && outbound.hãng !== 'VJ';
     const finalPrice = calculateFinalPrice(result['thông_tin_chung'].giá_vé, result);
     const copyTemplate = generateCopyTemplate(result);
     const ticketClassSummary = getTicketClassSummary(result);
@@ -425,14 +532,20 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
     // Determine text color based on baggage type
     const getCopyTextColor = () => {
-      if (isVNA && baggageType === 'ADT') {
+      if (!isVJ && baggageType === 'ADT') {
         return 'text-red-600'; // Red for ADT
       }
       return 'text-black'; // Black for others
     };
 
     return (
-      <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden mb-2 border">
+      <div
+        key={index}
+        className={`
+          bg-white rounded-lg shadow-md overflow-hidden mb-2 border
+          ${isOtherAirline ? 'border-2 border-yellow-500 shadow-yellow-200' : 'border-gray-200'}
+        `}
+      >
         <div className="p-2">
           {/* Flight Info Section - More compact */}
           <div className="space-y-1 mb-2">
@@ -638,7 +751,11 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const getFilteredVnaResults = () => {
     if (selectedAirline === 'VJ') return [];
     
-    let filtered = vnaResults;
+    // Filter to only include VNA flights (exclude Other airlines like 7C, OZ, etc.)
+    let filtered = vnaResults.filter(result => {
+      const outbound = result['chiều_đi'];
+      return outbound?.hãng === 'VNA';
+    });
     
     // Apply flight type filter only to VNA
     if (selectedFlightType !== 'all') {
@@ -705,17 +822,43 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return [];
   };
 
+  // Get Other Airlines (not VJ and not VNA)
+  const getOtherAirlinesResults = () => {
+    return vnaResults.filter(result => {
+      const outbound = result['chiều_đi'];
+      const hang = outbound?.hãng;
+      return hang && hang !== 'VNA' && hang !== 'VJ';
+    }).sort((a, b) => {
+      const aPrice = parseInt(a['thông_tin_chung'].giá_vé);
+      const bPrice = parseInt(b['thông_tin_chung'].giá_vé);
+      return aPrice - bPrice;
+    });
+  };
+
+  // Get cheapest Other airline flight
+  const getCheapestOtherFlight = () => {
+    const otherFlights = getOtherAirlinesResults();
+    if (otherFlights.length === 0) return null;
+    return otherFlights[0]; // Already sorted by price
+  };
+
+  const otherAirlinesFlights = getOtherAirlinesResults();
+  const cheapestOtherFlight = getCheapestOtherFlight();
+
   const filteredVjetResults = getFilteredVjetResults();
   const filteredVnaResults = getFilteredVnaResults();
   const totalResults = filteredVjetResults.length + filteredVnaResults.length;
 
-  // Check for VNA direct flights for special handling
+  // Check for VNA direct flights for special handling (only VNA, exclude other airlines)
   const getVNADirectFlights = () => {
     if (selectedAirline === 'VJ') return [];
     
     return vnaResults.filter(result => {
       const outbound = result['chiều_đi'];
       const inbound = result['chiều_về'];
+      
+      // Only VNA flights
+      if (outbound?.hãng !== 'VNA') return false;
       
       const isDirectOutbound = outbound && outbound.số_điểm_dừng === '0';
       const isDirectInbound = !inbound || inbound.số_điểm_dừng === '0';
@@ -729,6 +872,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     let connecting = vnaResults.filter(result => {
       const outbound = result['chiều_đi'];
       const inbound = result['chiều_về'];
+      
+      // Only VNA flights
+      if (outbound?.hãng !== 'VNA') return false;
       
       const isDirectOutbound = outbound && outbound.số_điểm_dừng === '0';
       const isDirectInbound = !inbound || inbound.số_điểm_dừng === '0';
@@ -789,6 +935,30 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           Kết quả tìm kiếm ({totalResults} chuyến bay)
         </h3>
         
+        {/* Cheapest Other Airlines Banner */}
+        {cheapestOtherFlight && (
+          <div 
+            onClick={() => setOtherAirlinesModalOpen(true)}
+            className="mb-4 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <span className="bg-yellow-500 text-white px-2 py-1 rounded text-sm font-bold">OTHER</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Giá rẻ nhất hãng khác: <span className="font-bold text-yellow-700">{AIRLINE_NAMES[(cheapestOtherFlight['chiều_đi'] as VNAFlightLeg)?.hãng] || (cheapestOtherFlight['chiều_đi'] as VNAFlightLeg)?.hãng}</span>
+                  </p>
+                  <p className="text-lg font-bold text-yellow-600">
+                    {formatPriceForDisplay(calculateFinalPrice(cheapestOtherFlight['thông_tin_chung'].giá_vé, cheapestOtherFlight))} KRW
+                  </p>
+                </div>
+              </div>
+              <div className="text-yellow-600 flex items-center text-sm font-medium">
+                Xem {otherAirlinesFlights.length} vé hãng khác →
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* VietJet Column */}
@@ -835,6 +1005,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Other Airlines Modal */}
+        <OtherAirlinesModal
+          isOpen={otherAirlinesModalOpen}
+          onClose={() => setOtherAirlinesModalOpen(false)}
+          otherFlights={otherAirlinesFlights}
+          searchData={searchData}
+          onBookingSuccess={onVJBookingSuccess}
+        />
 
         {/* Booking Modal for two-column view */}
         {selectedFlight && (
@@ -885,6 +1064,31 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       <h3 className="text-xl font-bold text-gray-800 mb-4">
         Kết quả tìm kiếm ({singleColumnResults.length} chuyến bay)
       </h3>
+
+      {/* Cheapest Other Airlines Banner for VNA view */}
+      {selectedAirline === 'VNA' && cheapestOtherFlight && (
+        <div 
+          onClick={() => setOtherAirlinesModalOpen(true)}
+          className="mb-4 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="bg-yellow-500 text-white px-2 py-1 rounded text-sm font-bold">OTHER</span>
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Giá rẻ nhất hãng khác: <span className="font-bold text-yellow-700">{AIRLINE_NAMES[(cheapestOtherFlight['chiều_đi'] as VNAFlightLeg)?.hãng] || (cheapestOtherFlight['chiều_đi'] as VNAFlightLeg)?.hãng}</span>
+                </p>
+                <p className="text-lg font-bold text-yellow-600">
+                  {formatPriceForDisplay(calculateFinalPrice(cheapestOtherFlight['thông_tin_chung'].giá_vé, cheapestOtherFlight))} KRW
+                </p>
+              </div>
+            </div>
+            <div className="text-yellow-600 flex items-center text-sm font-medium">
+              Xem {otherAirlinesFlights.length} vé hãng khác →
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Show red message for VNA single column if no direct flights but have connecting flights */}
       {selectedAirline === 'VNA' && vnaDirectFlights.length === 0 && vnaConnectingFlights.length > 0 && selectedFlightType === 'all' && (
@@ -899,43 +1103,52 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         {singleColumnResults.map((result, index) => renderFlightCard(result, index, index + 1))}
       </div>
 
-        {/* Booking Modals */}
-        {selectedFlight && (
-          <>
-            <BookingModal
-              isOpen={bookingModalOpen}
-              onClose={() => {
-                setBookingModalOpen(false);
-                setSelectedFlight(null);
-              }}
-              bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
-              bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
-              tripType={searchData?.tripType || 'OW'}
-              departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
-              maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
-              onBookingSuccess={onVJBookingSuccess}
-            />
-            
-            <VNABookingModal
-              isOpen={vnaBookingModalOpen}
-              onClose={() => {
-                setVnaBookingModalOpen(false);
-                setSelectedFlight(null);
-              }}
-              flightInfo={{
-                dep: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || '',
-                arr: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đến || '',
-                depdate: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || '',
-                deptime: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.giờ_cất_cánh || '',
-                arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || undefined,
-                arrtime: (selectedFlight['chiều_về'] as VNAFlightLeg)?.giờ_cất_cánh,
-                tripType: searchData?.tripType || 'OW'
-              }}
-              maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
-              onBookingSuccess={onVNABookingSuccess}
-            />
-          </>
-        )}
+      {/* Other Airlines Modal */}
+      <OtherAirlinesModal
+        isOpen={otherAirlinesModalOpen}
+        onClose={() => setOtherAirlinesModalOpen(false)}
+        otherFlights={otherAirlinesFlights}
+        searchData={searchData}
+        onBookingSuccess={onVJBookingSuccess}
+      />
+
+      {/* Booking Modals */}
+      {selectedFlight && (
+        <>
+          <BookingModal
+            isOpen={bookingModalOpen}
+            onClose={() => {
+              setBookingModalOpen(false);
+              setSelectedFlight(null);
+            }}
+            bookingKey={(selectedFlight['chiều đi'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_đi'] as FlightLeg)?.BookingKey || ''}
+            bookingKeyReturn={(selectedFlight['chiều về'] as FlightLeg)?.BookingKey || (selectedFlight['chiều_về'] as FlightLeg)?.BookingKey}
+            tripType={searchData?.tripType || 'OW'}
+            departureAirport={(selectedFlight['chiều đi'] as FlightLeg)?.nơi_đi || (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || ''}
+            maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+            onBookingSuccess={onVJBookingSuccess}
+          />
+          
+          <VNABookingModal
+            isOpen={vnaBookingModalOpen}
+            onClose={() => {
+              setVnaBookingModalOpen(false);
+              setSelectedFlight(null);
+            }}
+            flightInfo={{
+              dep: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đi || '',
+              arr: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.nơi_đến || '',
+              depdate: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.ngày_cất_cánh || '',
+              deptime: (selectedFlight['chiều_đi'] as VNAFlightLeg)?.giờ_cất_cánh || '',
+              arrdate: (selectedFlight['chiều_về'] as VNAFlightLeg)?.ngày_cất_cánh || undefined,
+              arrtime: (selectedFlight['chiều_về'] as VNAFlightLeg)?.giờ_cất_cánh,
+              tripType: searchData?.tripType || 'OW'
+            }}
+            maxSeats={parseInt(selectedFlight['thông_tin_chung'].số_ghế_còn)}
+            onBookingSuccess={onVNABookingSuccess}
+          />
+        </>
+      )}
     </div>
   );
 };
